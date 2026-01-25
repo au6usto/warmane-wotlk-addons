@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: Dorox Chat Filter
+## Notes: Highlights ICC, RS, VOA, and Warlock-related keywords in chat. Preserves achievement/item links.
+## Author: Dorox
+## Version: 1.1.0
+## SavedVariables: DoroxChatFilterDB
+
+DoroxChatFilter.lua
