@@ -1,0 +1,85 @@
+# Bottles Configuration for Warmane WoW
+# This is a reference config - paths will need to be updated for your system
+#
+# To recreate this bottle:
+# 1. Create a new Gaming bottle named "Warmane" in Bottles
+# 2. Install the dependencies listed below
+# 3. Configure the parameters as shown
+# 4. Add WoW as an external program
+
+Arch: win64
+Name: Warmane
+Environment: Gaming
+Windows: win10
+
+# Wine Runner
+Runner: soda-9.0-1
+
+# Graphics
+DXVK: dxvk-2.7.1
+VKD3D: vkd3d-proton-2.14.1
+LatencyFleX: latencyflex-v0.1.1
+NVAPI: dxvk-nvapi-v0.9.0
+
+# Dependencies to install via Bottles UI
+Installed_Dependencies:
+  - d3dx9
+  - msls31
+  - arial32
+  - times32
+  - courie32
+  - d3dcompiler_43
+  - d3dcompiler_47
+  - mono
+  - gecko
+  - d3dx11
+  - devenum
+  - quartz
+
+# Parameters
+Parameters:
+  # Graphics
+  dxvk: true
+  vkd3d: true
+  renderer: vulkan
+  discrete_gpu: true
+  dxvk_nvapi: false
+  fsr: false
+
+  # Performance
+  gamemode: true
+  sync: fsync
+  vmtouch: true
+  vmtouch_cache_cwd: false
+
+  # Window
+  virtual_desktop: false
+  decorated: true
+  mouse_warp: true
+  take_focus: false
+  fullscreen_capture: false
+
+  # Debug
+  fixme_logs: false
+  mangohud: false
+
+  # Other
+  sandbox: false
+  pulseaudio_latency: false
+  custom_dpi: 96
+
+# External Program (WoW)
+# Path will be: <bottle>/drive_c/warmane/Wow.exe
+External_Programs:
+  warmane-wow:
+    name: Warmane WoW
+    executable: Wow.exe
+    folder: warmane
+    # These inherit from bottle settings:
+    dxvk: null
+    vkd3d: null
+    fsr: null
+    gamescope: null
+
+DLL_Overrides: {}
+Environment_Variables: {}
