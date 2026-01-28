@@ -1,32 +1,37 @@
 # Warmane WotLK Addons
 
-A collection of custom World of Warcraft 3.3.5a addons for Warmane private servers.
+A complete WoW 3.3.5a addon collection for Warmane private servers, with symlink-based management for easy syncing.
 
-## Addons
+## Addons (46 total)
 
-### [DoroxChatFilter](addons/DoroxChatFilter/)
+All addons are stored in this repo and symlinked to the WoW client.
 
-Smart chat filter that highlights raid recruitment messages. Features include:
-- Detects LFM messages for ICC, RS, and VOA
-- Color-codes raids, sizes, and roles
-- Lockout awareness (hides saved raids)
-- Personal alerts for raid/party mentions
-- Hyperlink-safe highlighting
+### Custom Addons
+- **DoroxChatFilter** - Smart LFM chat filter with raid/role highlighting
+- **DoroxLootTracker** - Visual raid loot tracker with priority system
 
-### [DoroxLootTracker](addons/DoroxLootTracker/)
+### Raid & Combat
+- **DBM** (Deadly Boss Mods) - Boss timers and alerts
+- **Details** - Damage/healing meters
+- **WeakAuras** - Custom UI alerts and trackers
+- **GTFO** - Bad stuff warnings
+- **DocsCorporeality** - Halion corporeality tracker
 
-Visual loot tracker for raid drops. Features include:
-- Draggable tracking frame with priority list
-- Alerts when tracked items drop
-- Mark items as obtained
-- Priority-based color coding
-
-### [Quartz](addons/Quartz/)
-
-Modular casting bar addon (3.0.3.1). This is a community addon with support for:
-- Separate auto and melee swing timers
-- Highly customizable cast bars
-- Latency visualization
+### UI & Quality of Life
+- **Bagnon** - All-in-one bag addon
+- **Quartz** - Modular cast bars
+- **OmniCC** - Cooldown text on buttons
+- **TidyPlates** - Customizable nameplates
+- **MoveAnything** - Move any UI frame
+- **OPie** - Radial action menus
+- **Auctionator** - Auction house helper
+- **Postal** - Mail enhancement
+- **Questie** - Quest helper
+- **Scrap** - Auto-sell junk
+- **GearScoreLite** - Gear score display
+- **ClassLoot** - Loot class recommendations
+- **AutoRepair** - Auto repair gear
+- **SnowfallKeyPress** - Faster key response
 
 ## Configuration
 
@@ -58,19 +63,32 @@ Complete Bottles configuration to run WoW on Linux:
 
 ## Installation
 
-### Option 1: Clone the Repository
+### Fresh Install (New Machine)
 
 ```bash
+# Clone the repo
 git clone https://github.com/au6usto/warmane-wotlk-addons.git
+cd warmane-wotlk-addons
+
+# Create symlinks from repo to WoW AddOns folder
+./scripts/sync-addons.sh link
+
+# Restore WeakAuras config
+./scripts/sync-weakauras.sh push
 ```
 
-Then copy or symlink the addons from `addons/` to your WoW `Interface/AddOns/` folder.
+### Addon Management
 
-### Option 2: Manual Download
+```bash
+# Check addon sync status
+./scripts/sync-addons.sh status
 
-1. Download the addon folder you want
-2. Place it in your `Interface/AddOns/` folder
-3. Restart WoW or reload UI (`/reload`)
+# Import new addons from WoW to repo (after installing new addon in-game)
+./scripts/sync-addons.sh import
+
+# Create symlinks for all repo addons
+./scripts/sync-addons.sh link
+```
 
 ## Compatibility
 
