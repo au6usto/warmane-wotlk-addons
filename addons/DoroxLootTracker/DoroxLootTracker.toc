@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: Dorox Loot Tracker
+## Notes: Tracks and alerts for desired raid loot drops
+## Author: Dorox
+## Version: 1.0.0
+## SavedVariables: DoroxLootTrackerDB
+
+DoroxLootTracker.lua

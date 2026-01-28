@@ -65,6 +65,12 @@ local defaults = {
         "REP FARM", "REPFARM", "REPUTATION FARM",
     },
 
+    -- Ignored raid configurations (raid+size combos you don't want to see)
+    -- Format: { ["ICC25"] = true, ["RS10"] = true }
+    ignoredRaidConfigs = {
+        ["ICC25"] = true,  -- Ignore all ICC 25 (normal and heroic)
+    },
+
     -- Lockout awareness setting
     checkLockouts = true,
 }
@@ -423,9 +429,17 @@ local function ProcessRaidMessage(msg)
         return nil, false
     end
 
+    -- Check if this raid configuration is ignored (e.g., ICC25)
+    local raidKeyword, size, isHeroic = ParseRaidFromMessage(msg)
+    if raidKeyword and size and DoroxChatFilterDB.ignoredRaidConfigs then
+        local configKey = raidKeyword:upper() .. tostring(size)
+        if DoroxChatFilterDB.ignoredRaidConfigs[configKey] then
+            return nil, false  -- Ignored raid config, skip
+        end
+    end
+
     -- Check if player is locked to this raid (skip highlighting if locked)
     if DoroxChatFilterDB.checkLockouts then
-        local raidKeyword, size, isHeroic = ParseRaidFromMessage(msg)
         if raidKeyword and size then
             if HasRaidLockout(raidKeyword, size, isHeroic) then
                 return nil, false  -- Return as non-match (shows as normal chat)
@@ -592,6 +606,8 @@ local function HandleSlashCommand(msg)
         print("  /dcf addrole <keyword> - Add role keyword")
         print("  /dcf addpersonal <keyword> - Add personal alert keyword")
         print("  /dcf addexclude <keyword> - Add exclusion keyword (e.g., REP FARM)")
+        print("  /dcf ignore <raid><size> - Ignore a raid config (e.g., ICC25, RS10)")
+        print("  /dcf unignore <raid><size> - Stop ignoring a raid config")
         print("  /dcf list - List all keywords")
         print("  /dcf test - Test with sample message")
         print("  /dcf reset - Reset to defaults")
@@ -653,6 +669,29 @@ local function HandleSlashCommand(msg)
             print("|cff00FF00[DoroxChatFilter]|r Added exclusion keyword: |cffFF0000" .. arg .. "|r")
         end
 
+    elseif cmd == "ignore" then
+        if arg ~= "" then
+            local configKey = arg:upper()
+            DoroxChatFilterDB.ignoredRaidConfigs = DoroxChatFilterDB.ignoredRaidConfigs or {}
+            DoroxChatFilterDB.ignoredRaidConfigs[configKey] = true
+            print("|cff00FF00[DoroxChatFilter]|r Now ignoring: |cffFF0000" .. configKey .. "|r")
+        else
+            print("|cff00FF00[DoroxChatFilter]|r Usage: /dcf ignore <raid><size> (e.g., ICC25, RS10)")
+        end
+
+    elseif cmd == "unignore" then
+        if arg ~= "" then
+            local configKey = arg:upper()
+            if DoroxChatFilterDB.ignoredRaidConfigs and DoroxChatFilterDB.ignoredRaidConfigs[configKey] then
+                DoroxChatFilterDB.ignoredRaidConfigs[configKey] = nil
+                print("|cff00FF00[DoroxChatFilter]|r No longer ignoring: |cff00FF00" .. configKey .. "|r")
+            else
+                print("|cff00FF00[DoroxChatFilter]|r " .. configKey .. " was not in the ignore list")
+            end
+        else
+            print("|cff00FF00[DoroxChatFilter]|r Usage: /dcf unignore <raid><size> (e.g., ICC25, RS10)")
+        end
+
     elseif cmd == "list" then
         print("|cff00FF00[DoroxChatFilter]|r Keywords:")
         print("|cff" .. DoroxChatFilterDB.colors.raids .. "Raids:|r " .. table.concat(DoroxChatFilterDB.raids, ", "))
@@ -660,6 +699,14 @@ local function HandleSlashCommand(msg)
         print("|cff" .. DoroxChatFilterDB.colors.role .. "Roles:|r " .. table.concat(DoroxChatFilterDB.wantedRoles, ", "))
         print("|cff" .. DoroxChatFilterDB.colors.personal .. "Personal:|r " .. table.concat(DoroxChatFilterDB.personalAlerts, ", "))
         print("|cffFF0000Exclusions:|r " .. table.concat(DoroxChatFilterDB.exclusions, ", "))
+        -- List ignored raid configs
+        local ignoredList = {}
+        if DoroxChatFilterDB.ignoredRaidConfigs then
+            for config, _ in pairs(DoroxChatFilterDB.ignoredRaidConfigs) do
+                table.insert(ignoredList, config)
+            end
+        end
+        print("|cffFF6666Ignored Raids:|r " .. (#ignoredList > 0 and table.concat(ignoredList, ", ") or "None"))
 
     elseif cmd == "test" then
         print("|cff00FF00[DoroxChatFilter]|r Test messages:")
@@ -695,6 +742,13 @@ local function HandleSlashCommand(msg)
         print("  Input: " .. testMsg6)
         print("  Output: " .. (result6 or "NO MATCH (excluded)"))
 
+        -- Test ignored raid config (ICC25)
+        local testMsg7 = "LFM ICC25H need rdps"
+        local result7, matched7 = ProcessRaidMessage(testMsg7)
+        print("  Input: " .. testMsg7)
+        local ignoredNote = (DoroxChatFilterDB.ignoredRaidConfigs and DoroxChatFilterDB.ignoredRaidConfigs["ICC25"]) and " (ICC25 ignored)" or ""
+        print("  Output: " .. (result7 or "NO MATCH" .. ignoredNote))
+
     elseif cmd == "reset" then
         DoroxChatFilterDB = {}
         InitializeDB()
@@ -711,6 +765,14 @@ local function HandleSlashCommand(msg)
         print("  Raids: " .. #DoroxChatFilterDB.raids .. " keywords")
         print("  Roles: " .. #DoroxChatFilterDB.wantedRoles .. " keywords")
         print("  Personal: " .. #DoroxChatFilterDB.personalAlerts .. " keywords")
+        -- Count ignored raid configs
+        local ignoredCount = 0
+        if DoroxChatFilterDB.ignoredRaidConfigs then
+            for _ in pairs(DoroxChatFilterDB.ignoredRaidConfigs) do
+                ignoredCount = ignoredCount + 1
+            end
+        end
+        print("  Ignored raids: " .. ignoredCount .. " configs")
     else
         print("|cff00FF00[DoroxChatFilter]|r Unknown command. Type /dcf help")
     end

@@ -1,0 +1,14 @@
+# Personal files
+warlock.md
+warlock-upgrades.md
+CLAUDE.md
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
