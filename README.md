@@ -53,13 +53,20 @@ Warlock WeakAuras configuration with sync support:
 ./scripts/sync-weakauras.sh push
 ```
 
-### [Bottles Setup](config/bottles/)
+### [Bottles Setup](config/bottles/) (Linux)
 
 Complete Bottles configuration to run WoW on Linux:
 - Wine runner and DXVK settings
 - Required dependencies list
 - Step-by-step setup guide
 - Performance optimizations (Gamemode, Fsync, Vulkan)
+
+### [Windows Setup](config/windows/)
+
+Scripts and guide for syncing to Windows WoW client:
+- PowerShell and batch sync scripts
+- Symlink or copy mode support
+- WeakAuras sync for Windows
 
 ## Installation
 
