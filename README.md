@@ -28,6 +28,26 @@ Modular casting bar addon (3.0.3.1). This is a community addon with support for:
 - Highly customizable cast bars
 - Latency visualization
 
+## Configuration
+
+### [WeakAuras](config/weakauras/)
+
+Warlock WeakAuras configuration with sync support:
+- Full SavedVariables backup
+- Exported WA strings for easy sharing
+- Sync script to pull/push between game and repo
+
+```bash
+# Check sync status
+./scripts/sync-weakauras.sh status
+
+# Save in-game changes to repo
+./scripts/sync-weakauras.sh pull
+
+# Restore repo config to game
+./scripts/sync-weakauras.sh push
+```
+
 ## Installation
 
 ### Option 1: Clone the Repository
