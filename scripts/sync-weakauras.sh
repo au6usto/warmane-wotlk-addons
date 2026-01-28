@@ -3,22 +3,66 @@
 # WeakAuras Sync Script
 # Syncs WeakAuras configuration between WoW client and this repository
 #
-
-set -e
+# Set environment variables to override auto-detection:
+#   export WOW_SAVED_VARS="/path/to/WTF/Account/ACCOUNTNAME/SavedVariables"
+#
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-
-# Paths
-WOW_WTF="/path/to/WoW/WTF/Account/ACCOUNT/SavedVariables"
 REPO_SAVED_VARS="$REPO_DIR/config/weakauras/saved-variables"
 REPO_EXPORTS="$REPO_DIR/config/weakauras/exports"
+
+# Auto-detect WoW SavedVariables path if not set
+if [ -z "$WOW_SAVED_VARS" ]; then
+    # Try common Bottles/Flatpak path
+    BOTTLES_BASE="$HOME/.var/app/com.usebottles.bottles/data/bottles/bottles"
+    if [ -d "$BOTTLES_BASE" ]; then
+        for bottle in "$BOTTLES_BASE"/*; do
+            if [ -d "$bottle/drive_c" ]; then
+                for wow_path in "warmane" "World of Warcraft" "WoW"; do
+                    WTF_PATH="$bottle/drive_c/$wow_path/WTF/Account"
+                    if [ -d "$WTF_PATH" ]; then
+                        # Find first account folder with SavedVariables
+                        for account in "$WTF_PATH"/*; do
+                            if [ -d "$account/SavedVariables" ]; then
+                                WOW_SAVED_VARS="$account/SavedVariables"
+                                break 3
+                            fi
+                        done
+                    fi
+                done
+            fi
+        done
+    fi
+
+    # Try native Wine path
+    if [ -z "$WOW_SAVED_VARS" ] && [ -d "$HOME/.wine/drive_c" ]; then
+        for wow_path in "World of Warcraft" "WoW" "warmane"; do
+            WTF_PATH="$HOME/.wine/drive_c/$wow_path/WTF/Account"
+            if [ -d "$WTF_PATH" ]; then
+                for account in "$WTF_PATH"/*; do
+                    if [ -d "$account/SavedVariables" ]; then
+                        WOW_SAVED_VARS="$account/SavedVariables"
+                        break 2
+                    fi
+                done
+            fi
+        done
+    fi
+fi
+
+if [ -z "$WOW_SAVED_VARS" ]; then
+    echo "ERROR: Could not find WoW SavedVariables folder!"
+    echo "Please set the WOW_SAVED_VARS environment variable:"
+    echo "  export WOW_SAVED_VARS=\"/path/to/WTF/Account/ACCOUNTNAME/SavedVariables\""
+    exit 1
+fi
 
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 print_usage() {
     echo "Usage: $0 [pull|push|status]"
@@ -28,10 +72,12 @@ print_usage() {
     echo "  push    - Copy WeakAuras from repo to WoW client (restore config to game)"
     echo "  status  - Show sync status and file differences"
     echo ""
-    echo "Examples:"
-    echo "  $0 pull   # After making changes in-game, save them to repo"
-    echo "  $0 push   # Restore repo config to game (after fresh install)"
-    echo "  $0 status # Check if files are in sync"
+    echo "Environment variables:"
+    echo "  WOW_SAVED_VARS  - Path to WoW WTF/Account/<NAME>/SavedVariables"
+    echo ""
+    echo "Current paths:"
+    echo "  Repo:  $REPO_SAVED_VARS"
+    echo "  WoW:   $WOW_SAVED_VARS"
 }
 
 check_wow_running() {
@@ -50,8 +96,9 @@ do_pull() {
     echo -e "${YELLOW}Pulling WeakAuras from WoW client to repo...${NC}"
     check_wow_running
 
-    if [[ ! -f "$WOW_WTF/WeakAuras.lua" ]]; then
+    if [[ ! -f "$WOW_SAVED_VARS/WeakAuras.lua" ]]; then
         echo -e "${RED}Error: WeakAuras.lua not found in WoW client${NC}"
+        echo "Path checked: $WOW_SAVED_VARS"
         exit 1
     fi
 
@@ -62,7 +109,8 @@ do_pull() {
     fi
 
     # Copy from WoW to repo
-    cp "$WOW_WTF/WeakAuras.lua" "$REPO_SAVED_VARS/"
+    mkdir -p "$REPO_SAVED_VARS"
+    cp "$WOW_SAVED_VARS/WeakAuras.lua" "$REPO_SAVED_VARS/"
     echo -e "${GREEN}Done! WeakAuras.lua copied to repo${NC}"
     echo ""
     echo "Next steps:"
@@ -80,13 +128,14 @@ do_push() {
     fi
 
     # Backup existing WoW file
-    if [[ -f "$WOW_WTF/WeakAuras.lua" ]]; then
-        cp "$WOW_WTF/WeakAuras.lua" "$WOW_WTF/WeakAuras.lua.bak"
+    if [[ -f "$WOW_SAVED_VARS/WeakAuras.lua" ]]; then
+        cp "$WOW_SAVED_VARS/WeakAuras.lua" "$WOW_SAVED_VARS/WeakAuras.lua.bak"
         echo "  Backed up existing WoW file to WeakAuras.lua.bak"
     fi
 
     # Copy from repo to WoW
-    cp "$REPO_SAVED_VARS/WeakAuras.lua" "$WOW_WTF/"
+    mkdir -p "$WOW_SAVED_VARS"
+    cp "$REPO_SAVED_VARS/WeakAuras.lua" "$WOW_SAVED_VARS/"
     echo -e "${GREEN}Done! WeakAuras.lua copied to WoW client${NC}"
     echo ""
     echo "Start WoW to load the restored WeakAuras configuration."
@@ -99,12 +148,13 @@ do_status() {
 
     # Check if files exist
     echo "Files:"
-    if [[ -f "$WOW_WTF/WeakAuras.lua" ]]; then
-        WOW_SIZE=$(stat -c%s "$WOW_WTF/WeakAuras.lua" 2>/dev/null || stat -f%z "$WOW_WTF/WeakAuras.lua")
-        WOW_DATE=$(stat -c%y "$WOW_WTF/WeakAuras.lua" 2>/dev/null | cut -d'.' -f1 || stat -f"%Sm" "$WOW_WTF/WeakAuras.lua")
+    if [[ -f "$WOW_SAVED_VARS/WeakAuras.lua" ]]; then
+        WOW_SIZE=$(stat -c%s "$WOW_SAVED_VARS/WeakAuras.lua" 2>/dev/null || stat -f%z "$WOW_SAVED_VARS/WeakAuras.lua")
+        WOW_DATE=$(stat -c%y "$WOW_SAVED_VARS/WeakAuras.lua" 2>/dev/null | cut -d'.' -f1 || stat -f"%Sm" "$WOW_SAVED_VARS/WeakAuras.lua")
         echo -e "  WoW Client:  ${GREEN}Found${NC} (${WOW_SIZE} bytes, $WOW_DATE)"
     else
         echo -e "  WoW Client:  ${RED}Not found${NC}"
+        echo "    Path: $WOW_SAVED_VARS"
     fi
 
     if [[ -f "$REPO_SAVED_VARS/WeakAuras.lua" ]]; then
@@ -118,8 +168,8 @@ do_status() {
     echo ""
 
     # Compare files
-    if [[ -f "$WOW_WTF/WeakAuras.lua" && -f "$REPO_SAVED_VARS/WeakAuras.lua" ]]; then
-        if diff -q "$WOW_WTF/WeakAuras.lua" "$REPO_SAVED_VARS/WeakAuras.lua" > /dev/null 2>&1; then
+    if [[ -f "$WOW_SAVED_VARS/WeakAuras.lua" && -f "$REPO_SAVED_VARS/WeakAuras.lua" ]]; then
+        if diff -q "$WOW_SAVED_VARS/WeakAuras.lua" "$REPO_SAVED_VARS/WeakAuras.lua" > /dev/null 2>&1; then
             echo -e "Status: ${GREEN}In sync${NC}"
         else
             echo -e "Status: ${YELLOW}Out of sync${NC}"

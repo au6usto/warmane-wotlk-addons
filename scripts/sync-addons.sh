@@ -3,6 +3,9 @@
 # Addon Sync Script
 # Manages addons between this repo and the WoW client
 #
+# Set WOW_ADDONS environment variable to override auto-detection:
+#   export WOW_ADDONS="/path/to/WoW/Interface/AddOns"
+#
 
 # Don't use set -e because ((var++)) returns 1 when var is 0
 
@@ -10,7 +13,42 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 REPO_ADDONS="$REPO_DIR/addons"
 
-WOW_ADDONS="/path/to/WoW/Interface/AddOns"
+# Auto-detect WoW AddOns path if not set
+if [ -z "$WOW_ADDONS" ]; then
+    # Try common Bottles/Flatpak path
+    BOTTLES_BASE="$HOME/.var/app/com.usebottles.bottles/data/bottles/bottles"
+    if [ -d "$BOTTLES_BASE" ]; then
+        # Find first bottle with WoW
+        for bottle in "$BOTTLES_BASE"/*; do
+            if [ -d "$bottle/drive_c" ]; then
+                # Check for WoW in common locations
+                for wow_path in "warmane" "World of Warcraft" "WoW"; do
+                    if [ -d "$bottle/drive_c/$wow_path/Interface/AddOns" ]; then
+                        WOW_ADDONS="$bottle/drive_c/$wow_path/Interface/AddOns"
+                        break 2
+                    fi
+                done
+            fi
+        done
+    fi
+
+    # Try native Wine path
+    if [ -z "$WOW_ADDONS" ] && [ -d "$HOME/.wine/drive_c" ]; then
+        for wow_path in "World of Warcraft" "WoW" "warmane"; do
+            if [ -d "$HOME/.wine/drive_c/$wow_path/Interface/AddOns" ]; then
+                WOW_ADDONS="$HOME/.wine/drive_c/$wow_path/Interface/AddOns"
+                break
+            fi
+        done
+    fi
+fi
+
+if [ -z "$WOW_ADDONS" ]; then
+    echo "ERROR: Could not find WoW AddOns folder!"
+    echo "Please set the WOW_ADDONS environment variable:"
+    echo "  export WOW_ADDONS=\"/path/to/WoW/Interface/AddOns\""
+    exit 1
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -32,8 +70,12 @@ print_usage() {
     echo "  status  - Show current addon sync status"
     echo "  link    - Create symlinks for addons already in repo"
     echo ""
-    echo "This script manages addons by storing them in the repo and"
-    echo "symlinking them to the WoW AddOns folder."
+    echo "Environment variables:"
+    echo "  WOW_ADDONS  - Path to WoW Interface/AddOns folder"
+    echo ""
+    echo "Current paths:"
+    echo "  Repo:  $REPO_ADDONS"
+    echo "  WoW:   $WOW_ADDONS"
 }
 
 do_status() {
