@@ -398,9 +398,10 @@ end
 local function ProcessRaidMessage(msg)
     local upperMsg = msg:upper()
 
-    -- Must contain LFM or similar
+    -- Must contain LF/LFM or similar
     local hasLFM = upperMsg:match("%f[%w]LFM%f[%W]") or
                    upperMsg:match("%f[%w]LF%d+M%f[%W]") or
+                   upperMsg:match("%f[%w]LF%f[%W]") or
                    upperMsg:match("LOOKING FOR") or
                    upperMsg:match("NEED MORE")
 
