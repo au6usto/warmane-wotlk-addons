@@ -391,81 +391,43 @@ function DoroxAurasDisplay:ShowAura(auraConfig, texture, remaining, duration, st
 end
 
 -- Set sync overlay status for DoT + DFO tracking
--- syncStatus: "wait" (DFO building), "refresh" (optimal window), "urgent" (must refresh now), nil (normal)
+-- syncStatus: "refresh" (DFO active with good stacks - refresh for stronger DoT!), nil (normal)
 function DoroxAurasDisplay:SetSyncOverlay(icon, syncStatus)
     if not icon then return end
 
-    if syncStatus == "wait" then
-        -- DFO is building, wait before refreshing
-        icon.overlay:SetText("ESPERA")
-        icon.overlay:SetTextColor(0.5, 0.8, 1)  -- Light blue
-        icon.overlay:Show()
-        icon:SetBackdropBorderColor(0, 0.6, 1, 1)  -- Blue border
-        icon.customBorderColor = {0, 0.6, 1, 1}
-        icon.glow:SetVertexColor(0, 0.6, 1, 0.8)  -- Blue glow
-        icon.glow:Show()
-        icon.glowAnimating = true
-        if icon.outerGlow then
-            icon.outerGlow:SetVertexColor(0, 0.6, 1, 0.4)
-            icon.outerGlow:Show()
-        end
-        icon.pulseSpeed = 0.015  -- Slow pulse
-    elseif syncStatus == "refresh" then
-        -- Optimal time to refresh DoT with DFO buff
+    if syncStatus == "refresh" then
+        -- DFO active with good stacks - refresh Corruption to snapshot higher SP!
         icon.overlay:SetText("REFRESH!")
-        icon.overlay:SetTextColor(0, 1, 1)  -- Cyan
+        icon.overlay:SetTextColor(0, 1, 0.8)  -- Cyan-green
         icon.overlay:Show()
-        icon:SetBackdropBorderColor(0, 1, 1, 1)  -- Cyan border
-        icon.customBorderColor = {0, 1, 1, 1}
-        icon.glow:SetVertexColor(0, 1, 1, 0.8)  -- Cyan glow
+        icon:SetBackdropBorderColor(0, 1, 0.8, 1)  -- Cyan-green border
+        icon.customBorderColor = {0, 1, 0.8, 1}
+        icon.glow:SetVertexColor(0, 1, 0.8, 0.8)  -- Cyan-green glow
         icon.glow:Show()
         icon.glowAnimating = true
         if icon.outerGlow then
-            icon.outerGlow:SetVertexColor(0, 1, 1, 0.6)
+            icon.outerGlow:SetVertexColor(0, 1, 0.8, 0.6)
             icon.outerGlow:Show()
         end
         icon.pulseSpeed = 0.04  -- Fast pulse
-        icon.bouncing = true  -- Bounce when refresh needed
+        icon.bouncing = true  -- Bounce when DFO proc = refresh for stronger DoT
         icon.bounceSpeed = 0.06
-        -- Play sound for refresh window
+        -- Play sound for refresh (DFO proc active)
         if DoroxAurasAlerts and not icon.refreshSoundPlayed then
             DoroxAurasAlerts:PlaySound("map_ping")
             icon.refreshSoundPlayed = true
         end
-    elseif syncStatus == "urgent" then
-        -- DoT about to fall off, refresh immediately!
-        icon.overlay:SetText("AHORA!")
-        icon.overlay:SetTextColor(1, 0.3, 0.3)  -- Red
-        icon.overlay:Show()
-        icon:SetBackdropBorderColor(1, 0.2, 0.2, 1)  -- Red border
-        icon.customBorderColor = {1, 0.2, 0.2, 1}
-        icon.glow:SetVertexColor(1, 0.3, 0.3, 0.8)  -- Red glow
-        icon.glow:Show()
-        icon.glowAnimating = true
-        if icon.outerGlow then
-            icon.outerGlow:SetVertexColor(1, 0.3, 0.3, 0.8)
-            icon.outerGlow:Show()
-        end
-        icon.pulseSpeed = 0.06  -- Very fast pulse
-        icon.bouncing = true  -- Fast bounce when urgent
-        icon.bounceSpeed = 0.1
-        -- Play urgent sound
-        if DoroxAurasAlerts and not icon.urgentSoundPlayed then
-            DoroxAurasAlerts:PlaySound("raid_warning")
-            icon.urgentSoundPlayed = true
-        end
     else
-        -- Normal state
+        -- Normal state - no special action needed
         icon.overlay:Hide()
         icon.customBorderColor = nil
-        icon.glow:SetVertexColor(1, 1, 0, 0.8)  -- Default yellow glow
+        -- Don't change glow color, let normal logic handle it
         if icon.outerGlow then
             icon.outerGlow:Hide()
         end
         icon.pulseSpeed = 0.02  -- Default pulse
-        icon.bouncing = false  -- Stop bouncing
+        icon.bouncing = false  -- Stop bouncing - no reason to refresh
         icon.refreshSoundPlayed = false
-        icon.urgentSoundPlayed = false
     end
 end
 
@@ -795,5 +757,105 @@ end
 function DoroxAurasDisplay:HideProcAlert()
     if procAlertFrame then
         procAlertFrame:Hide()
+    end
+end
+
+-- ==================== MANA BAR ====================
+local manaBarFrame = nil
+
+local function CreateManaBar()
+    if manaBarFrame then return end
+
+    manaBarFrame = CreateFrame("Frame", "DoroxAuras_ManaBar", UIParent)
+    manaBarFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -50)
+    manaBarFrame:SetWidth(200)
+    manaBarFrame:SetHeight(16)
+    manaBarFrame:SetFrameStrata("MEDIUM")
+    manaBarFrame:Hide()
+
+    -- Background
+    manaBarFrame.bg = manaBarFrame:CreateTexture(nil, "BACKGROUND")
+    manaBarFrame.bg:SetAllPoints()
+    manaBarFrame.bg:SetTexture(0, 0, 0, 0.7)
+
+    -- Border
+    manaBarFrame:SetBackdrop({
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeSize = 8,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 }
+    })
+    manaBarFrame:SetBackdropBorderColor(0.3, 0.3, 0.8, 1)
+
+    -- Mana bar fill
+    manaBarFrame.bar = manaBarFrame:CreateTexture(nil, "ARTWORK")
+    manaBarFrame.bar:SetPoint("TOPLEFT", manaBarFrame, "TOPLEFT", 2, -2)
+    manaBarFrame.bar:SetPoint("BOTTOMLEFT", manaBarFrame, "BOTTOMLEFT", 2, 2)
+    manaBarFrame.bar:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    manaBarFrame.bar:SetVertexColor(0.2, 0.4, 1, 1)  -- Blue mana color
+
+    -- Percentage text
+    manaBarFrame.text = manaBarFrame:CreateFontString(nil, "OVERLAY")
+    manaBarFrame.text:SetPoint("CENTER", manaBarFrame, "CENTER", 0, 0)
+    manaBarFrame.text:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    manaBarFrame.text:SetTextColor(1, 1, 1, 1)
+
+    -- Label above bar
+    manaBarFrame.label = manaBarFrame:CreateFontString(nil, "OVERLAY")
+    manaBarFrame.label:SetPoint("BOTTOM", manaBarFrame, "TOP", 0, 2)
+    manaBarFrame.label:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+    manaBarFrame.label:SetTextColor(0.6, 0.8, 1, 0.9)
+    manaBarFrame.label:SetText("MANA")
+
+    -- Make movable
+    manaBarFrame:SetMovable(true)
+    manaBarFrame:EnableMouse(true)
+    manaBarFrame:RegisterForDrag("LeftButton")
+    manaBarFrame:SetScript("OnDragStart", function(self)
+        if not DoroxAurasConfig:GetConfig().locked then
+            self:StartMoving()
+        end
+    end)
+    manaBarFrame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+    end)
+end
+
+-- Update mana bar display
+-- Shows when mana < 80%, hides when >= 80%
+function DoroxAurasDisplay:UpdateManaBar(manaPercent)
+    CreateManaBar()
+
+    if manaPercent < 80 then
+        -- Show mana bar
+        local barWidth = (manaBarFrame:GetWidth() - 4) * (manaPercent / 100)
+        manaBarFrame.bar:SetWidth(math.max(1, barWidth))
+        manaBarFrame.text:SetFormattedText("%d%%", math.floor(manaPercent))
+
+        -- Color based on mana level
+        if manaPercent < 20 then
+            manaBarFrame.bar:SetVertexColor(1, 0.3, 0.3, 1)  -- Red
+            manaBarFrame:SetBackdropBorderColor(1, 0.3, 0.3, 1)
+        elseif manaPercent < 40 then
+            manaBarFrame.bar:SetVertexColor(1, 0.6, 0, 1)  -- Orange
+            manaBarFrame:SetBackdropBorderColor(1, 0.6, 0, 1)
+        elseif manaPercent < 60 then
+            manaBarFrame.bar:SetVertexColor(1, 1, 0, 1)  -- Yellow
+            manaBarFrame:SetBackdropBorderColor(0.8, 0.8, 0, 1)
+        else
+            manaBarFrame.bar:SetVertexColor(0.2, 0.6, 1, 1)  -- Blue
+            manaBarFrame:SetBackdropBorderColor(0.3, 0.5, 1, 1)
+        end
+
+        manaBarFrame:Show()
+    else
+        -- Hide when mana is healthy
+        manaBarFrame:Hide()
+    end
+end
+
+-- Hide mana bar
+function DoroxAurasDisplay:HideManaBar()
+    if manaBarFrame then
+        manaBarFrame:Hide()
     end
 end

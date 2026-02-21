@@ -534,67 +534,37 @@ local function GetDFOStatus()
 end
 
 -- Calculate DoT sync status based on DFO buff
--- Returns: nil (no sync needed), "wait" (DFO building), "refresh" (optimal window), "urgent" (refresh now!)
+-- Returns: nil (no action needed), "refresh" (DFO active - refresh for stronger DoT!)
+-- Only bounces when there's a REASON to refresh (proc active = stronger snapshot)
 local function GetDoTSyncStatus(dotRemaining, auraConfig)
     -- Only apply sync logic during combat
     if not UnitAffectingCombat("player") then
         return nil
     end
 
-    -- Only apply sync logic to DoTs that should snapshot (Corruption)
-    -- UA doesn't snapshot as well, but we track it for refresh timing
+    -- Only apply sync logic to DoTs that snapshot (Corruption)
     if not auraConfig or auraConfig.type ~= "debuff" then
         return nil
     end
 
-    -- Only sync Corruption and Unstable Affliction
+    -- Only sync Corruption (main snapshotting DoT in Affliction)
     local spell = auraConfig.spell
-    if spell ~= "Corruption" and spell ~= "Unstable Affliction" then
+    if spell ~= "Corruption" then
         return nil
     end
 
     local dfoActive, dfoRemaining, dfoStacks = GetDFOStatus()
 
-    if not dfoActive then
-        -- No DFO active - use standard refresh logic
-        if dotRemaining and dotRemaining > 0 then
-            if dotRemaining <= 1 then
-                return "urgent"  -- About to fall off!
-            end
-        end
-        return nil
-    end
-
-    -- DFO is active - apply sync logic
-    if not dotRemaining or dotRemaining <= 0 then
-        -- DoT not active at all - refresh immediately to benefit from DFO
+    -- Only suggest refresh when DFO is active with good stacks
+    -- This means the NEW Corruption would be stronger than current one
+    if dfoActive and dfoStacks >= 6 then
+        -- DFO is active with good stacks - refresh Corruption to snapshot higher SP!
         return "refresh"
     end
 
-    -- DFO active and DoT has time remaining
-    if dfoStacks < 8 and dotRemaining > 5 then
-        -- DFO still building stacks, DoT has plenty of time - WAIT
-        return "wait"
-    elseif dfoStacks >= 8 and dotRemaining <= 5 then
-        -- DFO at max stacks, DoT expiring soon - OPTIMAL REFRESH
-        return "refresh"
-    elseif dfoRemaining <= 3 and dotRemaining > 3 then
-        -- DFO about to expire, DoT has time - use last chance to refresh
-        return "refresh"
-    elseif dotRemaining <= 1 then
-        -- DoT about to fall off regardless - urgent refresh
-        return "urgent"
-    elseif dfoStacks >= 5 and dotRemaining <= 3 then
-        -- Good stacks, DoT expiring - refresh now
-        return "refresh"
-    end
-
-    -- DFO building but DoT needs refresh soon
-    if dotRemaining <= 3 then
-        return nil  -- Normal refresh warning, timer color handles it
-    end
-
-    return nil  -- No special status
+    -- No DFO or low stacks = no reason to refresh early
+    -- Let the DoT expire naturally, timer colors handle visibility
+    return nil
 end
 
 -- Initialize trackers
@@ -950,17 +920,49 @@ function DoroxAurasTrackers:UpdateFillers()
     end
 end
 
+-- Track mana alert state to avoid spamming
+local manaAlertShown = false
+local lastManaAlertTime = 0
+
 -- Update mana alerts (Life Tap reminder when mana low)
+-- Shows a BIG alert in center screen when mana is critically low
 function DoroxAurasTrackers:UpdateManaAlerts()
     local config = DoroxAurasConfig:GetConfig()
     if not config.enabled then return end
 
+    local manaMax = UnitManaMax("player")
+    local manaCurrent = UnitMana("player")
+    local manaPercent = (manaMax > 0) and (manaCurrent / manaMax * 100) or 100
+
+    -- Update mana bar (shows when < 80%)
+    DoroxAurasDisplay:UpdateManaBar(manaPercent)
+
+    -- Big Life Tap alert when mana < 25% (only in combat)
+    if UnitAffectingCombat("player") and manaPercent < 25 then
+        local now = GetTime()
+        -- Only show alert every 5 seconds to avoid spam
+        if not manaAlertShown or (now - lastManaAlertTime) > 5 then
+            local texture = GetSpellTexture("Life Tap")
+            local alertText = string.format("LIFE TAP! (%d%%)", math.floor(manaPercent))
+            local color
+            if manaPercent < 10 then
+                color = {1, 0.2, 0.2}  -- Red
+            elseif manaPercent < 20 then
+                color = {1, 0.5, 0}  -- Orange
+            else
+                color = {1, 0.8, 0}  -- Yellow
+            end
+            DoroxAurasDisplay:ShowProcAlert(alertText, "Mana Low!", texture, color, 2, "map_ping")
+            manaAlertShown = true
+            lastManaAlertTime = now
+        end
+    else
+        manaAlertShown = false
+    end
+
+    -- Also update small icon in procs group (optional, for visibility)
     for _, auraConfig in ipairs(config.auras) do
         if auraConfig.type == "mana_alert" then
-            local manaMax = UnitManaMax("player")
-            local manaCurrent = UnitMana("player")
-            local manaPercent = (manaMax > 0) and (manaCurrent / manaMax * 100) or 100
-
             local threshold = auraConfig.show_below_mana or 40
 
             if manaPercent < threshold then
@@ -983,35 +985,26 @@ function DoroxAurasTrackers:UpdateManaAlerts()
                         iconFrame.glow:SetVertexColor(1, 0.3, 0.3, 0.8)
                         iconFrame.glow:Show()
                         iconFrame.glowAnimating = true
-                        iconFrame.pulseSpeed = 0.05  -- Fast pulse
-                        iconFrame.bouncing = true  -- Bounce at critical mana
-                    elseif manaPercent < 20 then
-                        -- Very Low - Orange + Bounce
+                        iconFrame.pulseSpeed = 0.05
+                        iconFrame.bouncing = true
+                    elseif manaPercent < 25 then
+                        -- Low - Orange + Bounce
                         iconFrame.timer:SetTextColor(1, 0.5, 0)
                         iconFrame:SetBackdropBorderColor(1, 0.5, 0, 1)
                         iconFrame.glow:SetVertexColor(1, 0.5, 0, 0.8)
                         iconFrame.glow:Show()
                         iconFrame.glowAnimating = true
                         iconFrame.pulseSpeed = 0.04
-                        iconFrame.bouncing = true  -- Bounce at 20% mana
-                    elseif manaPercent < 30 then
-                        -- Low - Orange
-                        iconFrame.timer:SetTextColor(1, 0.5, 0)
-                        iconFrame:SetBackdropBorderColor(1, 0.5, 0, 1)
-                        iconFrame.glow:SetVertexColor(1, 0.5, 0, 0.8)
-                        iconFrame.glow:Show()
-                        iconFrame.glowAnimating = true
-                        iconFrame.pulseSpeed = 0.03
-                        iconFrame.bouncing = false  -- No bounce above 20%
+                        iconFrame.bouncing = true
                     else
-                        -- Warning - Yellow
+                        -- Warning - Yellow (no bounce)
                         iconFrame.timer:SetTextColor(1, 0.8, 0)
                         iconFrame:SetBackdropBorderColor(1, 0.8, 0, 1)
                         iconFrame.glow:SetVertexColor(1, 1, 0, 0.8)
                         iconFrame.glow:Show()
                         iconFrame.glowAnimating = true
                         iconFrame.pulseSpeed = 0.02
-                        iconFrame.bouncing = false  -- No bounce above 20%
+                        iconFrame.bouncing = false
                     end
 
                     iconFrame.timer:Show()

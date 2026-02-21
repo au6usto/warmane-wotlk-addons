@@ -331,10 +331,10 @@ local defaults = {
             glow = true,
             show_stacks = true,
             is_snapshot_trinket = true,  -- Flag for DoT sync logic
-            sound = "map_ping",
+            sound = "raid_warning",  -- Loud sound like other important procs
             big_alert = true,
             alert_text = "DFO ACTIVE!",
-            alert_subtext = "Refresh DoTs at max stacks!",
+            alert_subtext = "Refresh Corruption!",
             alert_color = {0, 1, 0.8},  -- Cyan-green
             priority = 1,
         },
