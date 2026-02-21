@@ -225,7 +225,8 @@ local defaults = {
             type = "buff",
             spell = "Life Tap",
             show_missing = true,
-            refresh_warn = 5,
+            refresh_warn = 10,  -- Show when < 10 seconds remaining
+            hide_when_healthy = true,  -- Only show when missing or expiring
             glow_on_missing = true,
             priority = 2,
         },
@@ -421,7 +422,8 @@ local defaults = {
             type = "buff",
             spell = "Fel Intelligence",
             show_missing = true,
-            requires_pet = "Felhunter",
+            show_if_no_pet = true,  -- Also show as missing if no pet is out
+            requires_pet = "Felhunter",  -- Only track when Felhunter is out (or no pet)
             priority = 6,
         },
         {

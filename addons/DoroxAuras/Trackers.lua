@@ -306,7 +306,16 @@ local function CheckAuraConditions(auraConfig)
     -- Check pet requirement
     if auraConfig.requires_pet then
         local currentPet = GetPetType()
-        if currentPet ~= auraConfig.requires_pet then
+        local hasPet = UnitExists("pet")
+
+        -- If show_if_no_pet is true, allow showing when no pet exists
+        if auraConfig.show_if_no_pet and not hasPet then
+            -- No pet = show as missing (continue to check other conditions)
+            if debug then
+                DoroxAurasDebug:LogConditionCheck(auraConfig, true, "no_pet_show_missing")
+            end
+        elseif currentPet ~= auraConfig.requires_pet then
+            -- Wrong pet type = hide
             if debug then
                 DoroxAurasDebug:LogConditionCheck(auraConfig, false, "wrong_pet:" .. (currentPet or "none") .. "!=" .. auraConfig.requires_pet)
             end
