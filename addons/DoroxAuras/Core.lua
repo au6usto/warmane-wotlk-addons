@@ -93,6 +93,23 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1, ...)
         if DoroxAurasDebug and DoroxAurasDebug:IsEnabled() then
             DoroxAurasDebug:LogRaidComposition()
         end
+
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        -- Track Demonic Circle: Summon
+        if arg1 == "player" then
+            local spellName = ...
+            if spellName == "Demonic Circle: Summon" then
+                DoroxAurasTrackers:OnDemonicCircleSummoned()
+            end
+        end
+
+    elseif event == "BAG_UPDATE" then
+        -- Update special auras (healthstone, etc.)
+        DoroxAurasTrackers:UpdateSpecialAuras()
+
+    elseif event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+        -- Reset Demonic Circle on zone change
+        DoroxAurasTrackers:UpdateSpecialAuras()
     end
 end)
 
@@ -108,6 +125,10 @@ eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 eventFrame:RegisterEvent("RAID_ROSTER_UPDATE")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+eventFrame:RegisterEvent("BAG_UPDATE")
+eventFrame:RegisterEvent("ZONE_CHANGED")
+eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 -- Slash commands
 SLASH_DOROXAURAS1 = "/da"

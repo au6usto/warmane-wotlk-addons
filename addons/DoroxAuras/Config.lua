@@ -184,6 +184,29 @@ local defaults = {
             priority = 1,
         },
         {
+            name = "Healthstone",
+            group = "self_buffs",
+            unit = "player",
+            type = "item",  -- Special: check bags for item
+            item_ids = {36892, 36893, 36894},  -- Fel Healthstone (all ranks)
+            show_missing = true,
+            glow_on_missing = true,
+            priority = 0,
+        },
+        {
+            name = "Demonic Circle",
+            group = "self_buffs",
+            unit = "player",
+            type = "special",  -- Special tracking for Demonic Circle
+            spell = "Demonic Circle: Teleport",
+            summon_spell = "Demonic Circle: Summon",
+            show_missing = true,
+            glow_on_missing = true,
+            track_distance = true,  -- Show distance/direction when out of range
+            max_range = 40,  -- Teleport range
+            priority = 0,
+        },
+        {
             name = "Soulstone",
             group = "self_buffs",
             unit = "group",  -- Special: scan all group/raid members

@@ -6,6 +6,102 @@ local spellTextureCache = {}
 local talentCache = {}
 local lastTalentCheck = 0
 
+-- Demonic Circle tracking
+local demonicCircle = {
+    exists = false,
+    x = 0,
+    y = 0,
+    mapId = nil,
+    placedTime = 0,
+}
+
+-- Get player map position
+local function GetPlayerPosition()
+    SetMapToCurrentZone()
+    local x, y = GetPlayerMapPosition("player")
+    local mapId = GetCurrentMapAreaID()
+    return x, y, mapId
+end
+
+-- Calculate distance between two map coordinates (approximate yards)
+local function GetMapDistance(x1, y1, x2, y2)
+    if not x1 or not y1 or not x2 or not y2 then return 999 end
+    if x1 == 0 and y1 == 0 then return 999 end
+    if x2 == 0 and y2 == 0 then return 999 end
+
+    -- Map coordinates are 0-1, roughly 1000-1500 yards per zone
+    -- This is an approximation
+    local dx = (x2 - x1) * 1000
+    local dy = (y2 - y1) * 1000
+    return math.sqrt(dx * dx + dy * dy)
+end
+
+-- Get direction arrow based on angle
+local function GetDirectionArrow(playerX, playerY, targetX, targetY, playerFacing)
+    if not playerX or not targetX then return "" end
+
+    local angle = math.atan2(targetY - playerY, targetX - playerX)
+    local relative = angle - playerFacing
+
+    -- Normalize to 0-2pi
+    while relative < 0 do relative = relative + (2 * math.pi) end
+    while relative > (2 * math.pi) do relative = relative - (2 * math.pi) end
+
+    -- Convert to 8 directions
+    local segment = math.floor((relative + math.pi/8) / (math.pi/4)) % 8
+    local arrows = {"→", "↗", "↑", "↖", "←", "↙", "↓", "↘"}
+    return arrows[segment + 1] or "?"
+end
+
+-- Check if Demonic Circle: Teleport is usable
+local function IsDemonicCircleUsable()
+    local usable, noMana = IsUsableSpell("Demonic Circle: Teleport")
+    return usable
+end
+
+-- Called when Demonic Circle: Summon is cast
+function DoroxAurasTrackers:OnDemonicCircleSummoned()
+    local x, y, mapId = GetPlayerPosition()
+    demonicCircle.exists = true
+    demonicCircle.x = x
+    demonicCircle.y = y
+    demonicCircle.mapId = mapId
+    demonicCircle.placedTime = GetTime()
+end
+
+-- Check Demonic Circle status
+function DoroxAurasTrackers:GetDemonicCircleStatus()
+    -- Circle expires after 6 minutes
+    if demonicCircle.exists and (GetTime() - demonicCircle.placedTime) > 360 then
+        demonicCircle.exists = false
+    end
+
+    -- Also check via spell usability as backup
+    local teleportUsable = IsDemonicCircleUsable()
+
+    if not demonicCircle.exists and not teleportUsable then
+        return "missing", nil, nil
+    end
+
+    -- Get current position and calculate distance
+    local playerX, playerY, currentMap = GetPlayerPosition()
+
+    -- Different zone = out of range
+    if demonicCircle.mapId and currentMap ~= demonicCircle.mapId then
+        return "out_of_range", 999, "?"
+    end
+
+    local distance = GetMapDistance(playerX, playerY, demonicCircle.x, demonicCircle.y)
+
+    if distance > 40 then
+        local facing = GetPlayerFacing() or 0
+        local arrow = GetDirectionArrow(playerX, playerY, demonicCircle.x, demonicCircle.y, facing)
+        return "out_of_range", distance, arrow
+    end
+
+    return "ready", distance, nil
+end
+
 -- Get spell texture (cached)
 local function GetSpellTexture(spellName)
     if spellTextureCache[spellName] then
@@ -573,6 +669,88 @@ function DoroxAurasTrackers:UpdateAll()
 
     self:UpdateGroupBuffs()
     self:UpdateWeaponEnchants()
+    self:UpdateSpecialAuras()
+end
+
+-- Update special auras (items in bags, Demonic Circle, etc.)
+function DoroxAurasTrackers:UpdateSpecialAuras()
+    local config = DoroxAurasConfig:GetConfig()
+    if not config.enabled then return end
+
+    for _, auraConfig in ipairs(config.auras) do
+        -- Handle item type (check bags)
+        if auraConfig.type == "item" and auraConfig.item_ids then
+            local hasItem = false
+            local itemTexture = nil
+
+            for _, itemId in ipairs(auraConfig.item_ids) do
+                local count = GetItemCount(itemId)
+                if count and count > 0 then
+                    hasItem = true
+                    itemTexture = GetItemIcon(itemId)
+                    break
+                end
+            end
+
+            if hasItem then
+                DoroxAurasDisplay:HideAura(auraConfig)  -- Have item, hide
+            else
+                if auraConfig.show_missing then
+                    -- Show missing with first item's icon
+                    local texture = GetItemIcon(auraConfig.item_ids[1]) or "Interface\\Icons\\INV_Misc_QuestionMark"
+                    local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                    if iconFrame then
+                        DoroxAurasDisplay:ShowMissing(iconFrame, texture, nil, auraConfig.glow_on_missing)
+                        DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                    end
+                end
+            end
+        end
+
+        -- Handle Demonic Circle special tracking
+        if auraConfig.type == "special" and auraConfig.spell == "Demonic Circle: Teleport" then
+            local status, distance, arrow = self:GetDemonicCircleStatus()
+
+            if status == "missing" then
+                if auraConfig.show_missing then
+                    local texture = GetSpellTexture(auraConfig.summon_spell or auraConfig.spell)
+                    local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                    if iconFrame then
+                        DoroxAurasDisplay:ShowMissing(iconFrame, texture, "PLACE!", auraConfig.glow_on_missing)
+                        DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                    end
+                end
+            elseif status == "out_of_range" then
+                -- Show with distance and direction
+                local texture = GetSpellTexture(auraConfig.spell)
+                local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                if iconFrame then
+                    iconFrame.icon:SetTexture(texture)
+                    iconFrame.icon:SetDesaturated(false)
+                    iconFrame.isMissing = false
+
+                    -- Show distance and arrow
+                    local distText = distance < 100 and string.format("%d", distance) or "FAR"
+                    iconFrame.timer:SetText(arrow or "?")
+                    iconFrame.timer:SetTextColor(1, 0.5, 0)  -- Orange
+                    iconFrame.timer:Show()
+
+                    iconFrame.stacks:SetText(distText)
+                    iconFrame.stacks:Show()
+
+                    -- Show glow for warning
+                    iconFrame.glow:Show()
+                    iconFrame:SetBackdropBorderColor(1, 0.5, 0, 1)
+                    iconFrame:Show()
+
+                    DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                end
+            else
+                -- Ready - hide or show green
+                DoroxAurasDisplay:HideAura(auraConfig)
+            end
+        end
+    end
 end
 
 -- Update group-wide buff tracking (Soulstone, etc.)
