@@ -389,8 +389,19 @@ function DoroxAurasTrackers:UpdateUnit(unit)
             end
 
             if found then
-                -- Aura is active
-                DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks)
+                -- Check if we should hide when "healthy" (active with plenty of time left)
+                if auraConfig.hide_when_healthy and remaining and auraConfig.refresh_warn then
+                    if remaining > auraConfig.refresh_warn then
+                        -- Aura is healthy, hide it
+                        DoroxAurasDisplay:HideAura(auraConfig)
+                    else
+                        -- Aura is expiring soon, show it
+                        DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks)
+                    end
+                else
+                    -- Normal behavior: show when active
+                    DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks)
+                end
             else
                 -- Aura not found
                 if auraConfig.show_missing then
@@ -437,10 +448,19 @@ function DoroxAurasTrackers:UpdateWeaponEnchants()
                 texture = "Interface\\Icons\\INV_Misc_Gem_01"
             end
 
-            local showGlow = enchantConfig.refresh_warn and expiration and
-                            expiration <= enchantConfig.refresh_warn
-
-            DoroxAurasDisplay:ShowAura(enchantConfig, texture, expiration, nil, nil)
+            -- Check if we should hide when "healthy"
+            if enchantConfig.hide_when_healthy and expiration and enchantConfig.refresh_warn then
+                if expiration > enchantConfig.refresh_warn then
+                    -- Enchant is healthy, hide it
+                    DoroxAurasDisplay:HideAura(enchantConfig)
+                else
+                    -- Enchant is expiring soon, show it
+                    DoroxAurasDisplay:ShowAura(enchantConfig, texture, expiration, nil, nil)
+                end
+            else
+                -- Normal behavior: show when active
+                DoroxAurasDisplay:ShowAura(enchantConfig, texture, expiration, nil, nil)
+            end
         else
             if enchantConfig.show_missing then
                 local texture = "Interface\\Icons\\INV_Misc_Gem_01"

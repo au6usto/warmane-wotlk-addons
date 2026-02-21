@@ -179,7 +179,8 @@ local defaults = {
             type = "buff",
             spell = "Fel Armor",
             show_missing = true,
-            refresh_warn = 600,
+            refresh_warn = 600,  -- 10 minutes
+            hide_when_healthy = true,  -- Only show when missing or < 10 min remaining
             priority = 1,
         },
         {
@@ -466,7 +467,8 @@ local defaults = {
             enchant = "Grand Spellstone",
             group = "self_buffs",
             show_missing = true,
-            refresh_warn = 600,
+            refresh_warn = 600,  -- 10 minutes
+            hide_when_healthy = true,  -- Only show when missing or < 10 min remaining
             priority = 10,
         },
     },
