@@ -184,6 +184,18 @@ local defaults = {
             priority = 1,
         },
         {
+            name = "Soulstone",
+            group = "self_buffs",
+            unit = "group",  -- Special: scan all group/raid members
+            type = "buff",
+            spell = "Soulstone Resurrection",
+            show_missing = true,
+            in_group_only = true,  -- Only show when in party/raid
+            check_cooldown = true,  -- Only show missing if spell is off cooldown
+            cooldown_spell = "Create Soulstone",  -- The spell to check cooldown for
+            priority = 0,
+        },
+        {
             name = "Life Tap",
             group = "self_buffs",
             unit = "player",

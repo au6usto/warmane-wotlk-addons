@@ -305,6 +305,68 @@ local function CheckAura(auraConfig, unit)
     return false, nil, nil, nil, nil
 end
 
+-- Check if a buff exists on ANY group/raid member
+local function CheckGroupBuff(auraConfig)
+    local spells = auraConfig.spells or {auraConfig.spell}
+
+    -- Check player first
+    for _, spellName in ipairs(spells) do
+        for i = 1, 40 do
+            local name, rank, icon, count, debuffType, duration, expirationTime = UnitBuff("player", i)
+            if not name then break end
+            if name == spellName then
+                local remaining = expirationTime and (expirationTime - GetTime()) or nil
+                return true, icon, remaining, duration, count
+            end
+        end
+    end
+
+    -- Check raid members
+    local numRaid = GetNumRaidMembers()
+    if numRaid > 0 then
+        for r = 1, numRaid do
+            local unit = "raid" .. r
+            for _, spellName in ipairs(spells) do
+                for i = 1, 40 do
+                    local name, rank, icon, count, debuffType, duration, expirationTime = UnitBuff(unit, i)
+                    if not name then break end
+                    if name == spellName then
+                        local remaining = expirationTime and (expirationTime - GetTime()) or nil
+                        return true, icon, remaining, duration, count
+                    end
+                end
+            end
+        end
+    else
+        -- Check party members
+        local numParty = GetNumPartyMembers()
+        for p = 1, numParty do
+            local unit = "party" .. p
+            for _, spellName in ipairs(spells) do
+                for i = 1, 40 do
+                    local name, rank, icon, count, debuffType, duration, expirationTime = UnitBuff(unit, i)
+                    if not name then break end
+                    if name == spellName then
+                        local remaining = expirationTime and (expirationTime - GetTime()) or nil
+                        return true, icon, remaining, duration, count
+                    end
+                end
+            end
+        end
+    end
+
+    return false, nil, nil, nil, nil
+end
+
+-- Check if a spell is off cooldown
+local function IsSpellReady(spellName)
+    local start, duration, enabled = GetSpellCooldown(spellName)
+    if not start then return false end  -- Spell not found
+    if duration == 0 then return true end  -- No cooldown
+    if (start + duration - GetTime()) <= 0 then return true end  -- Cooldown finished
+    return false
+end
+
 -- Initialize trackers
 function DoroxAurasTrackers:Initialize()
     local config = DoroxAurasConfig:GetConfig()
@@ -315,6 +377,7 @@ function DoroxAurasTrackers:Initialize()
         target = {},
         focus = {},
         pet = {},
+        group = {},  -- Special: scans all group/raid members
     }
 
     -- Index auras by unit for efficient lookup
@@ -508,7 +571,62 @@ function DoroxAurasTrackers:UpdateAll()
         end
     end
 
+    self:UpdateGroupBuffs()
     self:UpdateWeaponEnchants()
+end
+
+-- Update group-wide buff tracking (Soulstone, etc.)
+function DoroxAurasTrackers:UpdateGroupBuffs()
+    local config = DoroxAurasConfig:GetConfig()
+
+    if not config.enabled then return end
+
+    local auras = aurasByUnit["group"]
+    if not auras then return end
+
+    local inGroup = IsInGroup()
+    local debug = DoroxAurasDebug and DoroxAurasDebug:IsEnabled()
+
+    for _, auraConfig in ipairs(auras) do
+        -- Check if we should only show in group
+        if auraConfig.in_group_only and not inGroup then
+            DoroxAurasDisplay:HideAura(auraConfig)
+        else
+            -- Check cooldown requirement
+            local cooldownReady = true
+            if auraConfig.check_cooldown and auraConfig.cooldown_spell then
+                cooldownReady = IsSpellReady(auraConfig.cooldown_spell)
+            end
+
+            if not cooldownReady then
+                -- Spell on cooldown, hide the icon
+                DoroxAurasDisplay:HideAura(auraConfig)
+            else
+                -- Scan group for the buff
+                local found, icon, remaining, duration, stacks = CheckGroupBuff(auraConfig)
+
+                if debug then
+                    DoroxAurasDebug:LogAuraScan("group", auraConfig, found, icon, remaining, stacks)
+                end
+
+                if found then
+                    DoroxAurasDisplay:HideAura(auraConfig)  -- Someone has it, hide
+                else
+                    -- No one has it, show as missing
+                    if auraConfig.show_missing then
+                        local texture = GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
+                        local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                        if iconFrame then
+                            DoroxAurasDisplay:ShowMissing(iconFrame, texture, nil, auraConfig.glow_on_missing)
+                            DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                        end
+                    else
+                        DoroxAurasDisplay:HideAura(auraConfig)
+                    end
+                end
+            end
+        end
+    end
 end
 
 -- Clear all displayed auras
