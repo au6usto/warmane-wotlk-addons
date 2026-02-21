@@ -66,6 +66,7 @@ local defaults = {
             own = true,
             spell = "Corruption",
             refresh_warn = 3,
+            show_missing = true,
             priority = 1,
         },
         {
@@ -76,6 +77,7 @@ local defaults = {
             own = true,
             spell = "Unstable Affliction",
             refresh_warn = 2,
+            show_missing = true,
             priority = 2,
         },
         {
@@ -107,6 +109,9 @@ local defaults = {
             own = false,
             spells = {"Curse of the Elements", "Earth and Moon", "Ebon Plaguebringer"},
             show_missing = true,
+            in_group_only = true,  -- Only show when in party/raid
+            -- Only show if no Druid or DK in group (they provide equivalent debuffs)
+            hide_if_class_present = {"DRUID", "DEATHKNIGHT"},
             priority = 5,
         },
         {
@@ -126,6 +131,7 @@ local defaults = {
             own = true,
             spell = "Curse of Agony",
             refresh_warn = 2,
+            show_missing = true,
             priority = 7,
         },
         {
@@ -182,8 +188,9 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Life Tap",
+            show_missing = true,
             refresh_warn = 5,
-            glow_on_missing = false,
+            glow_on_missing = true,
             priority = 2,
         },
         {
@@ -254,6 +261,54 @@ local defaults = {
             type = "buff",
             spell = "Shadow Mastery",
             priority = 4,
+        },
+        -- ==================== AFFLICTION SNAPSHOT PROCS ====================
+        -- Track spell power procs for recasting Corruption with higher damage
+        {
+            name = "Eradication",
+            group = "procs",
+            unit = "player",
+            type = "buff",
+            spell = "Eradication",
+            show_stacks = true,
+            priority = 5,
+        },
+        {
+            name = "Surge of Power",
+            group = "procs",
+            unit = "player",
+            type = "buff",
+            spell = "Surge of Power",  -- Dying Curse trinket
+            glow = true,
+            priority = 6,
+        },
+        {
+            name = "Illustrious",
+            group = "procs",
+            unit = "player",
+            type = "buff",
+            spell = "Illustrious",  -- Illustration of the Dragon Soul
+            show_stacks = true,
+            glow_at_stacks = 8,  -- Glow when >= 8 stacks (recast Corruption!)
+            priority = 7,
+        },
+        {
+            name = "Now is the Time!",
+            group = "procs",
+            unit = "player",
+            type = "buff",
+            spell = "Now is the Time!",  -- Sundial of the Exiled
+            glow = true,
+            priority = 8,
+        },
+        {
+            name = "Abyssal Power",
+            group = "procs",
+            unit = "player",
+            type = "buff",
+            spell = "Abyssal Power",  -- Abyssal Rune trinket
+            glow = true,
+            priority = 9,
         },
 
         -- ==================== RAID BUFFS (show when missing) ====================

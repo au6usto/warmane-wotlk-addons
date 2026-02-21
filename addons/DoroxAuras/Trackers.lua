@@ -244,6 +244,20 @@ local function CheckAuraConditions(auraConfig)
         end
     end
 
+    -- Check if we should hide when certain classes are present
+    -- (e.g., don't show Curse of Elements if Druid/DK can apply equivalent debuff)
+    if auraConfig.hide_if_class_present then
+        local classes = ScanRaidComposition()
+        for _, className in ipairs(auraConfig.hide_if_class_present) do
+            if classes[className] and classes[className] > 0 then
+                if debug then
+                    DoroxAurasDebug:LogConditionCheck(auraConfig, false, "class_provides_equivalent:" .. className)
+                end
+                return false
+            end
+        end
+    end
+
     if debug then
         DoroxAurasDebug:LogConditionCheck(auraConfig, true, "all_conditions_met")
     end
@@ -358,6 +372,12 @@ function DoroxAurasTrackers:UpdateUnit(unit)
         elseif auraConfig.in_raid_only and not inRaid then
             if debug then
                 DoroxAurasDebug:LogConditionCheck(auraConfig, false, "not_in_raid")
+            end
+            DoroxAurasDisplay:HideAura(auraConfig)
+        -- Skip group-only auras when solo
+        elseif auraConfig.in_group_only and not inGroup then
+            if debug then
+                DoroxAurasDebug:LogConditionCheck(auraConfig, false, "not_in_group")
             end
             DoroxAurasDisplay:HideAura(auraConfig)
         else

@@ -314,7 +314,15 @@ function DoroxAurasDisplay:ShowAura(auraConfig, texture, remaining, duration, st
 
     icon.icon:SetTexture(texture)
     icon.currentTexture = texture  -- Store for tooltip debug
-    self:UpdateIcon(icon, remaining, duration, stacks, auraConfig.glow, auraConfig.refresh_warn)
+
+    -- Determine if we should glow
+    local showGlow = auraConfig.glow
+    -- Check glow_at_stacks condition (e.g., glow when Illustrious >= 8 stacks)
+    if auraConfig.glow_at_stacks and stacks and stacks >= auraConfig.glow_at_stacks then
+        showGlow = true
+    end
+
+    self:UpdateIcon(icon, remaining, duration, stacks, showGlow, auraConfig.refresh_warn)
     icon:Show()
 
     -- Play sound once per show
