@@ -40,18 +40,27 @@ end
 eventFrame:SetScript("OnEvent", function(self, event, arg1, ...)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         DoroxAuras:Initialize()
+        return
+    end
 
-    elseif event == "PLAYER_ENTERING_WORLD" then
+    -- Don't process other events until initialized
+    if not isInitialized then return end
+
+    if event == "PLAYER_ENTERING_WORLD" then
         -- Delayed update after zone change
         C_Timer.After(0.5, function()
-            DoroxAurasTrackers:UpdateAll()
+            if isInitialized and DoroxAurasTrackers then
+                DoroxAurasTrackers:UpdateAll()
+            end
         end)
 
     elseif event == "UNIT_AURA" then
         if arg1 == "player" then
             DoroxAurasTrackers:UpdateUnit("player")
+            DoroxAurasTrackers:UpdateFillers()  -- Update fillers when player buffs change
         elseif arg1 == "target" then
             DoroxAurasTrackers:UpdateUnit("target")
+            DoroxAurasTrackers:UpdateFillers()  -- Update fillers when target debuffs change
         elseif arg1 == "focus" then
             DoroxAurasTrackers:UpdateUnit("focus")
         elseif arg1 == "pet" then
@@ -60,6 +69,7 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1, ...)
 
     elseif event == "PLAYER_TARGET_CHANGED" then
         DoroxAurasTrackers:UpdateUnit("target")
+        DoroxAurasTrackers:UpdateFillers()
 
     elseif event == "PLAYER_FOCUS_CHANGED" then
         DoroxAurasTrackers:UpdateUnit("focus")
@@ -110,6 +120,14 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1, ...)
     elseif event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
         -- Reset Demonic Circle on zone change
         DoroxAurasTrackers:UpdateSpecialAuras()
+
+    elseif event == "SPELL_UPDATE_COOLDOWN" then
+        -- Update cooldown tracking (Haunt, Demonic Empowerment)
+        DoroxAurasTrackers:UpdateCooldowns()
+
+    elseif event == "UNIT_MANA" and arg1 == "player" then
+        -- Update mana alerts (Life Tap reminder)
+        DoroxAurasTrackers:UpdateManaAlerts()
     end
 end)
 
@@ -129,6 +147,8 @@ eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 eventFrame:RegisterEvent("BAG_UPDATE")
 eventFrame:RegisterEvent("ZONE_CHANGED")
 eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+eventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+eventFrame:RegisterEvent("UNIT_MANA")
 
 -- Slash commands
 SLASH_DOROXAURAS1 = "/da"
@@ -298,7 +318,9 @@ SlashCmdList["DOROXAURAS"] = function(msg)
         DoroxAurasBossMods:ShowAlert(testAlert, "Interface\\Icons\\Spell_Shadow_AntiShadow")
         DoroxAurasBossMods:ShowArrow(45, "RUN THIS WAY!")
         C_Timer.After(5, function()
-            DoroxAurasBossMods:HideArrow()
+            if DoroxAurasBossMods then
+                DoroxAurasBossMods:HideArrow()
+            end
         end)
 
     elseif cmd == "testcast" then

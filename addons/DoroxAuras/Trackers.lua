@@ -5,6 +5,40 @@ local aurasByUnit = {}  -- {player = {}, target = {}, pet = {}}
 local spellTextureCache = {}
 local talentCache = {}
 local lastTalentCheck = 0
+local cachedSpec = nil
+local lastSpecCheck = 0
+
+-- Get current warlock spec (shared function)
+local function GetWarlockSpec()
+    local now = GetTime()
+    -- Cache spec for 5 seconds (talents don't change often)
+    if cachedSpec and (now - lastSpecCheck) < 5 then
+        return cachedSpec
+    end
+
+    local _, _, _, _, demoPoints = GetTalentTabInfo(2)
+    local _, _, _, _, affliPoints = GetTalentTabInfo(1)
+    local _, _, _, _, destroPoints = GetTalentTabInfo(3)
+    demoPoints = demoPoints or 0
+    affliPoints = affliPoints or 0
+    destroPoints = destroPoints or 0
+
+    if demoPoints >= affliPoints and demoPoints >= destroPoints then
+        cachedSpec = "DEMO"
+    elseif affliPoints >= demoPoints and affliPoints >= destroPoints then
+        cachedSpec = "AFFLI"
+    else
+        cachedSpec = "DESTRO"
+    end
+
+    lastSpecCheck = now
+    return cachedSpec
+end
+
+-- Public accessor for spec
+function DoroxAurasTrackers:GetSpec()
+    return GetWarlockSpec()
+end
 
 -- Demonic Circle tracking
 local demonicCircle = {
@@ -293,6 +327,17 @@ end
 local function CheckAuraConditions(auraConfig)
     local debug = DoroxAurasDebug and DoroxAurasDebug:IsEnabled()
 
+    -- Check spec requirement (Affliction/Demonology/Destruction)
+    if auraConfig.requires_spec then
+        local currentSpec = GetWarlockSpec()
+        if currentSpec ~= auraConfig.requires_spec then
+            if debug then
+                DoroxAurasDebug:LogConditionCheck(auraConfig, false, "wrong_spec:" .. currentSpec .. "!=" .. auraConfig.requires_spec)
+            end
+            return false
+        end
+    end
+
     -- Check talent requirement
     if auraConfig.requires_talent then
         if not HasTalent(auraConfig.requires_talent) then
@@ -472,6 +517,86 @@ local function IsSpellReady(spellName)
     return false
 end
 
+-- DFO (Dislodged Foreign Object) tracking for DoT sync
+local dfoBuffName = "Surging Power"  -- The stacking spell power buff
+
+-- Check if DFO buff is active and get remaining time/stacks
+local function GetDFOStatus()
+    for i = 1, 40 do
+        local name, rank, icon, count, debuffType, duration, expirationTime, caster = UnitBuff("player", i)
+        if not name then break end
+        if name == dfoBuffName then
+            local remaining = expirationTime and (expirationTime - GetTime()) or 0
+            return true, remaining, count or 0
+        end
+    end
+    return false, 0, 0
+end
+
+-- Calculate DoT sync status based on DFO buff
+-- Returns: nil (no sync needed), "wait" (DFO building), "refresh" (optimal window), "urgent" (refresh now!)
+local function GetDoTSyncStatus(dotRemaining, auraConfig)
+    -- Only apply sync logic during combat
+    if not UnitAffectingCombat("player") then
+        return nil
+    end
+
+    -- Only apply sync logic to DoTs that should snapshot (Corruption)
+    -- UA doesn't snapshot as well, but we track it for refresh timing
+    if not auraConfig or auraConfig.type ~= "debuff" then
+        return nil
+    end
+
+    -- Only sync Corruption and Unstable Affliction
+    local spell = auraConfig.spell
+    if spell ~= "Corruption" and spell ~= "Unstable Affliction" then
+        return nil
+    end
+
+    local dfoActive, dfoRemaining, dfoStacks = GetDFOStatus()
+
+    if not dfoActive then
+        -- No DFO active - use standard refresh logic
+        if dotRemaining and dotRemaining > 0 then
+            if dotRemaining <= 1 then
+                return "urgent"  -- About to fall off!
+            end
+        end
+        return nil
+    end
+
+    -- DFO is active - apply sync logic
+    if not dotRemaining or dotRemaining <= 0 then
+        -- DoT not active at all - refresh immediately to benefit from DFO
+        return "refresh"
+    end
+
+    -- DFO active and DoT has time remaining
+    if dfoStacks < 8 and dotRemaining > 5 then
+        -- DFO still building stacks, DoT has plenty of time - WAIT
+        return "wait"
+    elseif dfoStacks >= 8 and dotRemaining <= 5 then
+        -- DFO at max stacks, DoT expiring soon - OPTIMAL REFRESH
+        return "refresh"
+    elseif dfoRemaining <= 3 and dotRemaining > 3 then
+        -- DFO about to expire, DoT has time - use last chance to refresh
+        return "refresh"
+    elseif dotRemaining <= 1 then
+        -- DoT about to fall off regardless - urgent refresh
+        return "urgent"
+    elseif dfoStacks >= 5 and dotRemaining <= 3 then
+        -- Good stacks, DoT expiring - refresh now
+        return "refresh"
+    end
+
+    -- DFO building but DoT needs refresh soon
+    if dotRemaining <= 3 then
+        return nil  -- Normal refresh warning, timer color handles it
+    end
+
+    return nil  -- No special status
+end
+
 -- Initialize trackers
 function DoroxAurasTrackers:Initialize()
     local config = DoroxAurasConfig:GetConfig()
@@ -564,11 +689,17 @@ function DoroxAurasTrackers:UpdateUnit(unit)
                         DoroxAurasDisplay:HideAura(auraConfig)
                     else
                         -- Aura is expiring soon, show it
-                        DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks)
+                        local syncStatus = GetDoTSyncStatus(remaining, auraConfig)
+                        DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks, syncStatus)
                     end
                 else
                     -- Normal behavior: show when active
-                    DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks)
+                    -- Calculate DoT sync status for target debuffs
+                    local syncStatus = nil
+                    if unit == "target" and auraConfig.type == "debuff" then
+                        syncStatus = GetDoTSyncStatus(remaining, auraConfig)
+                    end
+                    DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks, syncStatus)
                 end
             else
                 -- Aura not found
@@ -679,6 +810,328 @@ function DoroxAurasTrackers:UpdateAll()
     self:UpdateGroupBuffs()
     self:UpdateWeaponEnchants()
     self:UpdateSpecialAuras()
+    self:UpdateCooldowns()
+    self:UpdateFillers()
+    self:UpdateManaAlerts()
+end
+
+-- Check if a DoT is active on target with at least minRemaining seconds
+local function IsDoTActive(spellName, minRemaining)
+    if not UnitExists("target") then return false end
+
+    for i = 1, 40 do
+        local name, rank, icon, count, debuffType, duration, expirationTime, caster = UnitDebuff("target", i)
+        if not name then break end
+        if name == spellName and (caster == "player" or caster == "pet" or caster == "vehicle") then
+            local remaining = expirationTime and (expirationTime - GetTime()) or 0
+            return remaining >= (minRemaining or 0)
+        end
+    end
+    return false
+end
+
+-- Check if a spell is on cooldown (returns true if CD > 0)
+local function IsSpellOnCooldown(spellName)
+    local start, duration, enabled = GetSpellCooldown(spellName)
+    if not start or duration == 0 then return false end
+    return (start + duration - GetTime()) > 0
+end
+
+-- Update filler spell suggestions
+function DoroxAurasTrackers:UpdateFillers()
+    local config = DoroxAurasConfig:GetConfig()
+    if not config.enabled then return end
+    if not UnitExists("target") then
+        -- No target, hide all fillers
+        for _, auraConfig in ipairs(config.auras) do
+            if auraConfig.type == "filler" then
+                DoroxAurasDisplay:HideAura(auraConfig)
+            end
+        end
+        return
+    end
+
+    local currentSpec = GetWarlockSpec()
+
+    for _, auraConfig in ipairs(config.auras) do
+        if auraConfig.type == "filler" then
+            -- Check spec requirement
+            if auraConfig.requires_spec and currentSpec ~= auraConfig.requires_spec then
+                DoroxAurasDisplay:HideAura(auraConfig)
+            else
+                local showFiller = false
+
+                if auraConfig.spell == "Shadow Bolt" and currentSpec == "AFFLI" then
+                    -- Affliction: Show when DoTs stable AND Haunt on CD
+                    local dotsStable = IsDoTActive("Corruption", 3)
+                                    and IsDoTActive("Unstable Affliction", 2)
+                                    and IsDoTActive("Curse of Agony", 2)
+                    local hauntOnCD = IsSpellOnCooldown("Haunt")
+
+                    -- Don't show during Decimation (execute phase - use Soul Fire)
+                    local hasDecimation = false
+                    for i = 1, 40 do
+                        local name = UnitBuff("player", i)
+                        if not name then break end
+                        if name == "Decimation" then
+                            hasDecimation = true
+                            break
+                        end
+                    end
+
+                    -- Don't show during Shadow Trance (use instant Shadowbolt via proc)
+                    local hasShadowTrance = false
+                    for i = 1, 40 do
+                        local name = UnitBuff("player", i)
+                        if not name then break end
+                        if name == "Shadow Trance" then
+                            hasShadowTrance = true
+                            break
+                        end
+                    end
+
+                    showFiller = dotsStable and hauntOnCD and not hasDecimation and not hasShadowTrance
+
+                elseif auraConfig.spell == "Incinerate" and currentSpec == "DEMO" then
+                    -- Demo: Show when Immolate active AND Demonic Empowerment on CD
+                    local immolateActive = IsDoTActive("Immolate", 3)
+                    local deOnCD = IsSpellOnCooldown("Demonic Empowerment")
+
+                    -- Don't show during Decimation (execute phase)
+                    local hasDecimation = false
+                    for i = 1, 40 do
+                        local name = UnitBuff("player", i)
+                        if not name then break end
+                        if name == "Decimation" then
+                            hasDecimation = true
+                            break
+                        end
+                    end
+
+                    -- Don't show during Molten Core (use Soul Fire)
+                    local hasMoltenCore = false
+                    for i = 1, 40 do
+                        local name = UnitBuff("player", i)
+                        if not name then break end
+                        if name == "Molten Core" then
+                            hasMoltenCore = true
+                            break
+                        end
+                    end
+
+                    showFiller = immolateActive and deOnCD and not hasDecimation and not hasMoltenCore
+                end
+
+                if showFiller then
+                    local texture = GetSpellTexture(auraConfig.spell)
+                    local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                    if iconFrame then
+                        iconFrame.icon:SetTexture(texture)
+                        iconFrame.icon:SetDesaturated(false)
+                        iconFrame.isMissing = false
+                        iconFrame.timer:Hide()
+                        iconFrame.stacks:Hide()
+                        iconFrame.overlay:Hide()
+
+                        -- Show with glow
+                        iconFrame.glow:Show()
+                        iconFrame.glow:SetVertexColor(1, 1, 0, 0.8)
+                        iconFrame.glowAnimating = true
+                        iconFrame:SetBackdropBorderColor(0.8, 0.8, 0, 1)
+                        iconFrame:Show()
+
+                        DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                    end
+                else
+                    DoroxAurasDisplay:HideAura(auraConfig)
+                end
+            end
+        end
+    end
+end
+
+-- Update mana alerts (Life Tap reminder when mana low)
+function DoroxAurasTrackers:UpdateManaAlerts()
+    local config = DoroxAurasConfig:GetConfig()
+    if not config.enabled then return end
+
+    for _, auraConfig in ipairs(config.auras) do
+        if auraConfig.type == "mana_alert" then
+            local manaMax = UnitManaMax("player")
+            local manaCurrent = UnitMana("player")
+            local manaPercent = (manaMax > 0) and (manaCurrent / manaMax * 100) or 100
+
+            local threshold = auraConfig.show_below_mana or 40
+
+            if manaPercent < threshold then
+                local texture = GetSpellTexture(auraConfig.spell)
+                local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                if iconFrame then
+                    iconFrame.icon:SetTexture(texture)
+                    iconFrame.icon:SetDesaturated(false)
+                    iconFrame.isMissing = false
+                    iconFrame.stacks:Hide()
+
+                    -- Show mana percentage
+                    iconFrame.timer:SetFormattedText("%d%%", math.floor(manaPercent))
+
+                    -- Color based on mana level
+                    if manaPercent < 15 then
+                        -- Critical - Red + Bounce
+                        iconFrame.timer:SetTextColor(1, 0.2, 0.2)
+                        iconFrame:SetBackdropBorderColor(1, 0.2, 0.2, 1)
+                        iconFrame.glow:SetVertexColor(1, 0.3, 0.3, 0.8)
+                        iconFrame.glow:Show()
+                        iconFrame.glowAnimating = true
+                        iconFrame.pulseSpeed = 0.05  -- Fast pulse
+                        iconFrame.bouncing = true  -- Bounce at critical mana
+                    elseif manaPercent < 20 then
+                        -- Very Low - Orange + Bounce
+                        iconFrame.timer:SetTextColor(1, 0.5, 0)
+                        iconFrame:SetBackdropBorderColor(1, 0.5, 0, 1)
+                        iconFrame.glow:SetVertexColor(1, 0.5, 0, 0.8)
+                        iconFrame.glow:Show()
+                        iconFrame.glowAnimating = true
+                        iconFrame.pulseSpeed = 0.04
+                        iconFrame.bouncing = true  -- Bounce at 20% mana
+                    elseif manaPercent < 30 then
+                        -- Low - Orange
+                        iconFrame.timer:SetTextColor(1, 0.5, 0)
+                        iconFrame:SetBackdropBorderColor(1, 0.5, 0, 1)
+                        iconFrame.glow:SetVertexColor(1, 0.5, 0, 0.8)
+                        iconFrame.glow:Show()
+                        iconFrame.glowAnimating = true
+                        iconFrame.pulseSpeed = 0.03
+                        iconFrame.bouncing = false  -- No bounce above 20%
+                    else
+                        -- Warning - Yellow
+                        iconFrame.timer:SetTextColor(1, 0.8, 0)
+                        iconFrame:SetBackdropBorderColor(1, 0.8, 0, 1)
+                        iconFrame.glow:SetVertexColor(1, 1, 0, 0.8)
+                        iconFrame.glow:Show()
+                        iconFrame.glowAnimating = true
+                        iconFrame.pulseSpeed = 0.02
+                        iconFrame.bouncing = false  -- No bounce above 20%
+                    end
+
+                    iconFrame.timer:Show()
+                    iconFrame:Show()
+
+                    DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                end
+            else
+                DoroxAurasDisplay:HideAura(auraConfig)
+            end
+        end
+    end
+end
+
+-- Update cooldown tracking (Haunt, Demonic Empowerment, etc.)
+function DoroxAurasTrackers:UpdateCooldowns()
+    local config = DoroxAurasConfig:GetConfig()
+    if not config.enabled then return end
+
+    for _, auraConfig in ipairs(config.auras) do
+        if auraConfig.type == "cooldown" then
+            -- Check spec requirement
+            local specOk = true
+            if auraConfig.requires_spec then
+                local currentSpec = GetWarlockSpec()
+                if currentSpec ~= auraConfig.requires_spec then
+                    DoroxAurasDisplay:HideAura(auraConfig)
+                    specOk = false
+                end
+            end
+
+            if specOk then
+                -- Get cooldown info
+                local start, duration, enabled = GetSpellCooldown(auraConfig.spell)
+
+                if not start then
+                    -- Spell not found (not learned)
+                    DoroxAurasDisplay:HideAura(auraConfig)
+                elseif duration == 0 or enabled == 0 then
+                    -- Spell is ready (no cooldown)
+                    if auraConfig.show_when_ready then
+                        local texture = GetSpellTexture(auraConfig.spell)
+                        local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                        if iconFrame then
+                            iconFrame.icon:SetTexture(texture)
+                            iconFrame.icon:SetDesaturated(false)
+                            iconFrame.isMissing = false
+
+                            -- Show "READY" text above icon
+                            iconFrame.timer:SetText("READY")
+                            iconFrame.timer:SetTextColor(0, 1, 0)  -- Green
+                            iconFrame.timer:Show()
+                            iconFrame.stacks:Hide()
+
+                            -- Glow effect
+                            iconFrame.glow:SetVertexColor(0, 1, 0, 0.8)
+                            iconFrame.glow:Show()
+                            iconFrame.glowAnimating = true
+                            if iconFrame.outerGlow then
+                                iconFrame.outerGlow:SetVertexColor(0, 1, 0, 0.6)
+                                iconFrame.outerGlow:Show()
+                            end
+                            iconFrame:SetBackdropBorderColor(0, 1, 0, 1)  -- Green border
+                            iconFrame:Show()
+
+                            -- Show big alert and play sound when cooldown becomes ready
+                            if not iconFrame.cdReadyAlertPlayed then
+                                -- Play sound
+                                if DoroxAurasAlerts then
+                                    DoroxAurasAlerts:PlaySound("raid_warning")
+                                end
+                                -- Show big alert
+                                local alertText = auraConfig.spell .. " READY!"
+                                DoroxAurasDisplay:ShowProcAlert(alertText, "Cast now!", texture, {0, 1, 0}, 2)
+                                iconFrame.cdReadyAlertPlayed = true
+                            end
+
+                            DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                        end
+                    end
+                else
+                    -- Spell is on cooldown
+                    local remaining = (start + duration) - GetTime()
+                    if remaining > 0 then
+                        local texture = GetSpellTexture(auraConfig.spell)
+                        local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
+                        if iconFrame then
+                            iconFrame.icon:SetTexture(texture)
+                            iconFrame.icon:SetDesaturated(true)  -- Grayed out
+                            iconFrame.isMissing = false
+                            iconFrame.cdReadyAlertPlayed = false  -- Reset so alert plays when ready
+
+                            -- Show countdown
+                            if remaining <= 10 then
+                                iconFrame.timer:SetFormattedText("%.1f", remaining)
+                            else
+                                iconFrame.timer:SetFormattedText("%d", math.floor(remaining))
+                            end
+                            iconFrame.timer:SetTextColor(0.6, 0.6, 0.6)  -- Gray
+                            iconFrame.timer:Show()
+                            iconFrame.stacks:Hide()
+
+                            -- No glow when on CD
+                            iconFrame.glow:Hide()
+                            iconFrame.glowAnimating = false
+                            if iconFrame.outerGlow then
+                                iconFrame.outerGlow:Hide()
+                            end
+                            iconFrame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+                            iconFrame:Show()
+
+                            DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
+                        end
+                    else
+                        DoroxAurasDisplay:HideAura(auraConfig)
+                    end
+                end
+            end
+        end
+    end
 end
 
 -- Update special auras (items in bags, Demonic Circle, etc.)

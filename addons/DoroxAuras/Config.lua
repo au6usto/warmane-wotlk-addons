@@ -53,6 +53,36 @@ local defaults = {
             icon_size = 40,
             show_timer = false,
         },
+        -- Cooldown tracking (Haunt, Demonic Empowerment)
+        cooldowns = {
+            anchor = "CENTER",
+            x = 0,
+            y = 150,
+            grow = "HORIZONTAL",
+            spacing = 10,
+            icon_size = 80,
+            show_timer = true,
+        },
+        -- Trinket procs (DFO, CTS)
+        trinket_procs = {
+            anchor = "CENTER",
+            x = 0,
+            y = -100,
+            grow = "HORIZONTAL",
+            spacing = 5,
+            icon_size = 60,
+            show_timer = true,
+        },
+        -- Filler spell suggestions
+        fillers = {
+            anchor = "CENTER",
+            x = 0,
+            y = 50,
+            grow = "HORIZONTAL",
+            spacing = 5,
+            icon_size = 50,
+            show_timer = false,
+        },
     },
 
     -- Warlock auras (default config)
@@ -231,6 +261,15 @@ local defaults = {
             priority = 2,
         },
         {
+            name = "Life Tap Mana",
+            group = "procs",  -- Show prominently with procs
+            unit = "player",
+            type = "mana_alert",
+            spell = "Life Tap",
+            show_below_mana = 40,  -- Show when mana < 40%
+            priority = 10,
+        },
+        {
             name = "Soul Link",
             group = "self_buffs",
             unit = "player",
@@ -259,6 +298,80 @@ local defaults = {
             priority = 5,
         },
 
+        -- ==================== COOLDOWN TRACKING ====================
+        -- Main rotation cooldowns shown prominently
+        {
+            name = "Haunt CD",
+            group = "cooldowns",
+            unit = "player",
+            type = "cooldown",
+            spell = "Haunt",
+            show_when_ready = true,  -- Glow when CD = 0
+            requires_spec = "AFFLI",
+            priority = 1,
+        },
+        {
+            name = "Demonic Empowerment CD",
+            group = "cooldowns",
+            unit = "player",
+            type = "cooldown",
+            spell = "Demonic Empowerment",
+            show_when_ready = true,
+            requires_spec = "DEMO",
+            priority = 1,
+        },
+
+        -- ==================== TRINKET PROCS ====================
+        {
+            name = "DFO Proc",
+            group = "trinket_procs",
+            unit = "player",
+            type = "buff",
+            spell = "Surging Power",  -- DFO stacking buff
+            glow = true,
+            show_stacks = true,
+            is_snapshot_trinket = true,  -- Flag for DoT sync logic
+            sound = "map_ping",
+            big_alert = true,
+            alert_text = "DFO ACTIVE!",
+            alert_subtext = "Refresh DoTs at max stacks!",
+            alert_color = {0, 1, 0.8},  -- Cyan-green
+            priority = 1,
+        },
+        {
+            name = "CTS Proc",
+            group = "trinket_procs",
+            unit = "player",
+            type = "buff",
+            spell = "Twilight Flames",  -- Charred Twilight Scale
+            glow = true,
+            sound = "map_ping",
+            priority = 2,
+        },
+
+        -- ==================== FILLER SPELLS ====================
+        -- Show suggested filler when DoTs stable and CDs used
+        {
+            name = "Shadow Bolt Filler",
+            group = "fillers",
+            unit = "player",
+            type = "filler",
+            spell = "Shadow Bolt",
+            requires_spec = "AFFLI",
+            glow = true,
+            priority = 1,
+        },
+        {
+            name = "Incinerate Filler",
+            group = "fillers",
+            unit = "player",
+            type = "filler",
+            spell = "Incinerate",
+            requires_spec = "DEMO",
+            glow = true,
+            priority = 2,
+        },
+
         -- ==================== PROCS ====================
         {
             name = "Decimation",
@@ -268,6 +381,10 @@ local defaults = {
             spell = "Decimation",
             glow = true,
             sound = "raid_warning",
+            big_alert = true,
+            alert_text = "DECIMATION!",
+            alert_subtext = "Cast Soul Fire!",
+            alert_color = {1, 0.4, 0},  -- Orange
             priority = 1,
         },
         {
@@ -277,8 +394,12 @@ local defaults = {
             type = "buff",
             spell = "Molten Core",
             glow = true,
-            sound = "map_ping",
+            sound = "raid_warning",
             show_stacks = true,
+            big_alert = true,
+            alert_text = "MOLTEN CORE!",
+            alert_subtext = "Incinerate or Soul Fire!",
+            alert_color = {1, 0.5, 0},  -- Orange
             priority = 2,
         },
         {
@@ -289,6 +410,10 @@ local defaults = {
             spell = "Shadow Trance",
             glow = true,
             sound = "raid_warning",
+            big_alert = true,
+            alert_text = "NIGHTFALL!",
+            alert_subtext = "Instant Shadow Bolt!",
+            alert_color = {0.6, 0.2, 1},  -- Purple
             priority = 3,
         },
         {
@@ -414,17 +539,6 @@ local defaults = {
             is_paladin_blessing = true,
             blessing_priority = 3,
             priority = 5,
-        },
-        {
-            name = "Fel Intelligence",
-            group = "self_buffs",
-            unit = "player",
-            type = "buff",
-            spell = "Fel Intelligence",
-            show_missing = true,
-            show_if_no_pet = true,  -- Also show as missing if no pet is out
-            requires_pet = "Felhunter",  -- Only track when Felhunter is out (or no pet)
-            priority = 6,
         },
         {
             name = "Spirit",
