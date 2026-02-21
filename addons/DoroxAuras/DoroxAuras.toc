@@ -1,0 +1,15 @@
+## Interface: 30300
+## Title: Dorox Auras
+## Notes: WeakAuras + Quartz replacement with Boss Mods
+## Author: Dorox
+## Version: 1.2.0
+## SavedVariables: DoroxAurasDB
+
+Config.lua
+Debug.lua
+Display.lua
+Trackers.lua
+Alerts.lua
+BossMods.lua
+CastBar.lua
+Core.lua
