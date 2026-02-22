@@ -565,6 +565,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spells = {"Gift of the Wild", "Mark of the Wild"},
+            texture = "Interface\\Icons\\Spell_Nature_Regeneration",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -577,13 +578,14 @@ local defaults = {
             group = "raid_buffs",
             unit = "player",
             type = "buff",
-            -- Mage buffs OR Fel Intelligence (Felhunter) - they don't stack
-            spells = {"Arcane Brilliance", "Arcane Intellect", "Dalaran Brilliance", "Fel Intelligence"},
+            -- Mage buffs only (Fel Intelligence tracked separately in Spirit)
+            spells = {"Arcane Brilliance", "Arcane Intellect", "Dalaran Brilliance"},
+            texture = "Interface\\Icons\\Spell_Holy_MagicalSentry",  -- Arcane Intellect icon
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
             in_raid_only = true,
-            -- No required_class - can come from Mage OR Warlock pet
+            required_class = "MAGE",
             priority = 2,
         },
         {
@@ -593,6 +595,7 @@ local defaults = {
             type = "buff",
             -- Also includes Drums of Forgotten Kings (Leatherworking)
             spells = {"Greater Blessing of Kings", "Blessing of Kings", "Drums of the Forgotten Kings"},
+            texture = "Interface\\Icons\\Spell_Magic_GreaterBlessingofKings",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -609,6 +612,7 @@ local defaults = {
             type = "buff",
             -- Also includes Mana Spring Totem effect
             spells = {"Greater Blessing of Wisdom", "Blessing of Wisdom", "Mana Spring"},
+            texture = "Interface\\Icons\\Spell_Holy_GreaterBlessingofWisdom",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -624,6 +628,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spells = {"Greater Blessing of Sanctuary", "Blessing of Sanctuary"},
+            texture = "Interface\\Icons\\Spell_Holy_GreaterBlessingofSanctuary",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -640,6 +645,7 @@ local defaults = {
             type = "buff",
             -- Priest buffs OR Fel Intelligence - they provide spirit
             spells = {"Prayer of Spirit", "Divine Spirit", "Fel Intelligence"},
+            texture = "Interface\\Icons\\Spell_Holy_PrayerOfSpirit",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -654,6 +660,7 @@ local defaults = {
             type = "buff",
             -- Priest buffs OR Blood Pact (Imp) OR Commanding Shout (Warrior)
             spells = {"Prayer of Fortitude", "Power Word: Fortitude", "Blood Pact", "Commanding Shout"},
+            texture = "Interface\\Icons\\Spell_Holy_PrayerOfFortitude",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -667,6 +674,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spells = {"Flask of the Frost Wyrm", "Flask of Pure Mojo", "Flask of Endless Rage", "Flask of Stoneblood"},
+            texture = "Interface\\Icons\\INV_Alchemy_EndlessFlask_06",  -- Frost Wyrm flask
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -679,6 +687,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Well Fed",
+            texture = "Interface\\Icons\\Spell_Misc_Food",
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
