@@ -481,13 +481,8 @@ local function UpdateGCD()
     end
 end
 
-local function IsSpellInRange(spellName)
-    local inRange = IsSpellInRange(spellName, "target")
-    if inRange == nil then
-        return nil  -- Spell not found or no target
-    end
-    return inRange == 1
-end
+-- Store reference to WoW API before any local shadowing
+local WoWIsSpellInRange = IsSpellInRange
 
 local function CheckRange()
     if not rangeIndicator or testMode then return end
@@ -506,7 +501,7 @@ local function CheckRange()
     -- Check range using our spells
     local inRange = nil
     for _, spell in ipairs(RANGE_CHECK_SPELLS) do
-        inRange = IsSpellInRange(spell, "target")
+        inRange = WoWIsSpellInRange(spell, "target")
         if inRange ~= nil then break end
     end
 
