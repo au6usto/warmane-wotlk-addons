@@ -772,6 +772,12 @@ end
 
 -- Update all units
 function DoroxAurasTrackers:UpdateAll()
+    -- Hide everything when player is dead
+    if UnitIsDeadOrGhost("player") then
+        DoroxAurasDisplay:HideAllAuras()
+        return
+    end
+
     self:UpdateUnit("player")
 
     if UnitExists("target") then

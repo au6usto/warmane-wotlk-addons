@@ -461,6 +461,32 @@ function DoroxAurasDisplay:HideAura(auraConfig)
     end
 end
 
+-- Hide all icons (used when player is dead)
+function DoroxAurasDisplay:HideAllAuras()
+    for groupName, container in pairs(groupContainers) do
+        for _, icon in pairs(container.icons) do
+            icon:Hide()
+            icon.glow:Hide()
+            if icon.outerGlow then
+                icon.outerGlow:Hide()
+            end
+            if icon.overlay then
+                icon.overlay:Hide()
+            end
+            icon.glowAnimating = false
+            icon.bouncing = false
+            icon.bounceScale = 1.0
+            icon:SetScale(1.0)
+            icon.soundPlayed = false
+            icon.bigAlertPlayed = false
+            icon.refreshSoundPlayed = false
+            icon.urgentSoundPlayed = false
+            icon.isMissing = false
+        end
+        self:ArrangeGroup(groupName)
+    end
+end
+
 -- Arrange icons in a group (grid layout)
 function DoroxAurasDisplay:ArrangeGroup(groupName)
     local container = groupContainers[groupName]
