@@ -359,6 +359,11 @@ function DoroxAurasDisplay:ShowAura(auraConfig, texture, remaining, duration, st
         icon.overlay:Hide()
         icon.customBorderColor = nil
         icon.pulseSpeed = 0.02  -- Reset to default
+        icon.bouncing = false  -- Stop bouncing when no refresh needed
+        icon.refreshSoundPlayed = false
+        if icon.outerGlow then
+            icon.outerGlow:Hide()
+        end
     end
 
     icon:Show()

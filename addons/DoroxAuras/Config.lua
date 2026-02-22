@@ -233,6 +233,7 @@ local defaults = {
             spell = "Curse of Agony",
             refresh_warn = 2,
             show_missing = true,
+            requires_spec = "AFFLI",
             priority = 7,
         },
         {
@@ -458,6 +459,7 @@ local defaults = {
             alert_text = "DECIMATION!",
             alert_subtext = "Cast Soul Fire!",
             alert_color = {1, 0.4, 0},  -- Orange
+            requires_spec = "DEMO",
             priority = 1,
         },
         {
@@ -473,6 +475,7 @@ local defaults = {
             alert_text = "MOLTEN CORE!",
             alert_subtext = "Incinerate or Soul Fire!",
             alert_color = {1, 0.5, 0},  -- Orange
+            requires_spec = "DEMO",
             priority = 2,
         },
         {
