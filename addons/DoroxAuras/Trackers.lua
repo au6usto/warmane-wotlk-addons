@@ -187,17 +187,20 @@ local function GetSpellTexture(spellNameOrId)
     return missingIcon
 end
 
--- Get texture for an aura config (uses spell_id if available for reliable icon lookup)
+-- Get texture for an aura config
 local function GetAuraTexture(auraConfig)
-    -- First try spell_id (most reliable - works for any spell)
-    if auraConfig.spell_id then
-        return GetSpellTexture(auraConfig.spell_id)
+    -- First try item_id (most reliable in 3.3.5 - GetItemInfo works for any item)
+    if auraConfig.item_id then
+        local _, _, _, _, _, _, _, _, _, texture = GetItemInfo(auraConfig.item_id)
+        if texture then
+            return texture
+        end
     end
     -- Then try hardcoded texture path
     if auraConfig.texture then
         return auraConfig.texture
     end
-    -- Fall back to spell name
+    -- Fall back to spell name (only works if player knows spell)
     return GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
 end
 
