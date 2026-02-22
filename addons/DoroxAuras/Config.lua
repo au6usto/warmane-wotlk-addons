@@ -324,15 +324,15 @@ local defaults = {
         },
         {
             name = "Life Tap",
-            group = "self_buffs",
+            group = "fillers",
             unit = "player",
             type = "buff",
             spell = "Life Tap",
             show_missing = true,
-            refresh_warn = 10,  -- Show when < 10 seconds remaining
+            refresh_warn = 10,  -- Show bouncing when < 10 seconds remaining
             hide_when_healthy = true,  -- Only show when missing or expiring
             glow_on_missing = true,
-            priority = 2,
+            priority = 3,
         },
         {
             name = "Life Tap Mana",
@@ -350,6 +350,7 @@ local defaults = {
             type = "buff",
             spell = "Soul Link",
             show_missing = true,
+            hide_when_healthy = true,  -- Only show when MISSING, hide when active
             requires_talent = "Soul Link",  -- Only show if talented (Demonology)
             priority = 3,
         },
@@ -364,14 +365,14 @@ local defaults = {
         },
         {
             name = "Immolation Aura CD",
-            group = "cooldowns",
+            group = "fillers",
             unit = "player",
             type = "cooldown",
             spell = "Immolation Aura",
             show_when_ready = true,
             requires_spec = "DEMO",
             requires_buff = "Metamorphosis",  -- Only show when in Meta form
-            priority = 2,
+            priority = 4,
         },
 
         -- ==================== COOLDOWN TRACKING ====================
@@ -449,6 +450,7 @@ local defaults = {
         },
 
         -- ==================== PROCS ====================
+        -- These only show when the proc buff is ACTIVE (no show_missing)
         {
             name = "Decimation",
             group = "procs",
@@ -462,6 +464,7 @@ local defaults = {
             alert_subtext = "Cast Soul Fire!",
             alert_color = {1, 0.4, 0},  -- Orange
             requires_spec = "DEMO",
+            requires_talent = "Decimation",
             priority = 1,
         },
         {
@@ -478,6 +481,7 @@ local defaults = {
             alert_subtext = "Incinerate or Soul Fire!",
             alert_color = {1, 0.5, 0},  -- Orange
             requires_spec = "DEMO",
+            requires_talent = "Molten Core",
             priority = 2,
         },
         {
