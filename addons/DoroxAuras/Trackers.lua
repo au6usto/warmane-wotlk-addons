@@ -189,9 +189,12 @@ end
 
 -- Get texture for an aura config
 local function GetAuraTexture(auraConfig)
-    -- First try hardcoded texture path (most reliable - exists in game files)
-    if auraConfig.texture then
-        return auraConfig.texture
+    -- First try icon_spell (use a known spell's icon - most reliable in 3.3.5)
+    if auraConfig.icon_spell then
+        local _, _, icon = GetSpellInfo(auraConfig.icon_spell)
+        if icon then
+            return icon
+        end
     end
     -- Then try item_id (GetItemInfo works for cached items)
     if auraConfig.item_id then
@@ -199,6 +202,10 @@ local function GetAuraTexture(auraConfig)
         if texture then
             return texture
         end
+    end
+    -- Then try hardcoded texture path
+    if auraConfig.texture then
+        return auraConfig.texture
     end
     -- Fall back to spell name (only works if player knows spell)
     return GetSpellTexture(auraConfig.spell or auraConfig.spells[1])

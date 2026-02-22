@@ -451,14 +451,14 @@ local defaults = {
 
         -- ==================== PROCS ====================
         -- Decimation and Molten Core show icons when active + big center alert
-        -- Using exact WotLK texture paths (case-sensitive on Linux)
+        -- Using icon_spell = spell name that warlock KNOWS (GetSpellInfo will return texture)
         {
             name = "Decimation",
             group = "procs",
             unit = "player",
             type = "buff",
             spell = "Decimation",
-            texture = "Interface\\Icons\\Spell_Fire_SoulBurn",  -- Soul Fire icon
+            icon_spell = "Soul Fire",  -- Use Soul Fire's icon (all warlocks know it)
             glow = true,
             sound = "raid_warning",
             big_alert = true,
@@ -474,7 +474,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Molten Core",
-            texture = "Interface\\Icons\\Spell_Fire_Incinerate",  -- Incinerate icon
+            icon_spell = "Incinerate",  -- Use Incinerate's icon (all warlocks know it)
             glow = true,
             sound = "raid_warning",
             show_stacks = true,
@@ -491,7 +491,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Shadow Trance",
-            texture = "Interface\\Icons\\Spell_Shadow_ShadowBolt",  -- Shadow Bolt icon
+            icon_spell = "Shadow Bolt",  -- Use Shadow Bolt's icon (all warlocks know it)
             glow = true,
             sound = "raid_warning",
             big_alert = true,
@@ -506,7 +506,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Shadow Mastery",
-            texture = "Interface\\Icons\\Spell_Shadow_ShadowPact",  -- Shadow damage icon
+            icon_spell = "Corruption",  -- Use Corruption's icon (all warlocks know it)
             priority = 4,
         },
         -- ==================== AFFLICTION SNAPSHOT PROCS ====================
@@ -568,7 +568,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spells = {"Gift of the Wild", "Mark of the Wild"},
-            item_id = 49633,  -- Drums of the Wild (has MotW icon)
+            icon_spell = "Thorns",  -- Druid spell all druids know
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -583,7 +583,7 @@ local defaults = {
             type = "buff",
             -- Mage buffs only (Fel Intelligence tracked separately in Spirit)
             spells = {"Arcane Brilliance", "Arcane Intellect", "Dalaran Brilliance"},
-            item_id = 17020,  -- Arcane Powder (reagent, has int icon)
+            icon_spell = "Fel Intelligence",  -- Warlock pet spell we can use
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -598,7 +598,7 @@ local defaults = {
             type = "buff",
             -- Also includes Drums of Forgotten Kings (Leatherworking)
             spells = {"Greater Blessing of Kings", "Blessing of Kings", "Drums of the Forgotten Kings"},
-            item_id = 49634,  -- Drums of Forgotten Kings
+            item_id = 49634,  -- Drums of Forgotten Kings (item exists in game)
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -615,7 +615,7 @@ local defaults = {
             type = "buff",
             -- Also includes Mana Spring Totem effect
             spells = {"Greater Blessing of Wisdom", "Blessing of Wisdom", "Mana Spring"},
-            item_id = 21177,  -- Symbol of Kings (paladin reagent)
+            icon_spell = "Life Tap",  -- Warlock spell with blue/mana icon
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -631,7 +631,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spells = {"Greater Blessing of Sanctuary", "Blessing of Sanctuary"},
-            item_id = 21177,  -- Symbol of Kings (paladin reagent)
+            icon_spell = "Demon Armor",  -- Warlock spell with armor icon
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -648,7 +648,7 @@ local defaults = {
             type = "buff",
             -- Priest buffs OR Fel Intelligence - they provide spirit
             spells = {"Prayer of Spirit", "Divine Spirit", "Fel Intelligence"},
-            item_id = 17029,  -- Sacred Candle (priest reagent)
+            icon_spell = "Fel Intelligence",  -- Warlock pet spell
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -663,7 +663,7 @@ local defaults = {
             type = "buff",
             -- Priest buffs OR Blood Pact (Imp) OR Commanding Shout (Warrior)
             spells = {"Prayer of Fortitude", "Power Word: Fortitude", "Blood Pact", "Commanding Shout"},
-            item_id = 49632,  -- Runescroll of Fortitude
+            icon_spell = "Blood Pact",  -- Imp spell warlocks have
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -677,7 +677,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spells = {"Flask of the Frost Wyrm", "Flask of Pure Mojo", "Flask of Endless Rage", "Flask of Stoneblood"},
-            item_id = 46376,  -- Flask of the Frost Wyrm
+            item_id = 46376,  -- Flask of the Frost Wyrm (item exists)
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
@@ -690,7 +690,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Well Fed",
-            item_id = 43015,  -- Fish Feast
+            item_id = 43015,  -- Fish Feast (item exists)
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
