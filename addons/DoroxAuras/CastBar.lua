@@ -1,12 +1,29 @@
--- CastBar.lua - Cast bar and Target HP tracker
+-- CastBar.lua - Cast bar, Target Cast Bar, GCD, Range, and Target HP tracker
 DoroxAurasCastBar = {}
 
 local playerCastBar = nil
+local targetCastBar = nil
 local targetHPBar = nil
+local gcdBar = nil
+local rangeIndicator = nil
 local isChanneling = false
+local targetIsChanneling = false
 local lastAlertTime = 0
+local lastRangeAlertTime = 0
 local testMode = false
 local dummyMode = false
+
+-- Range checking spells (40 yard range for casters)
+local RANGE_CHECK_SPELLS = {
+    "Shadow Bolt",
+    "Corruption",
+    "Curse of Agony",
+    "Unstable Affliction",
+    "Incinerate",
+}
+
+-- GCD tracking
+local GCD_SPELL = "Life Tap"  -- A spell we always have to check GCD
 
 local EXECUTE_THRESHOLDS = {
     DEMO = { show_percent = 40, alert_percent = 35, spell = "Soul Fire", color = {1, 0.5, 0} },
@@ -83,6 +100,146 @@ local function CreatePlayerCastBar()
     frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
     frame:Hide()
     playerCastBar = frame
+end
+
+local function CreateTargetCastBar()
+    if targetCastBar then return end
+    local frame = CreateFrame("Frame", "DoroxTargetCastBarFrame", UIParent)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, -240)
+    frame:SetWidth(200)
+    frame:SetHeight(20)
+    frame:SetFrameStrata("HIGH")
+    frame:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 }
+    })
+    frame:SetBackdropColor(0, 0, 0, 0.8)
+    frame:SetBackdropBorderColor(0.8, 0.2, 0.2, 1)  -- Red border for enemy
+
+    frame.bar = CreateFrame("StatusBar", nil, frame)
+    frame.bar:SetPoint("TOPLEFT", 3, -3)
+    frame.bar:SetPoint("BOTTOMRIGHT", -3, 3)
+    frame.bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    frame.bar:SetStatusBarColor(0.8, 0.2, 0.2)  -- Red for enemy cast
+    frame.bar:SetMinMaxValues(0, 1)
+    frame.bar:SetValue(0)
+
+    frame.spark = frame.bar:CreateTexture(nil, "OVERLAY")
+    frame.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
+    frame.spark:SetWidth(16)
+    frame.spark:SetHeight(28)
+    frame.spark:SetBlendMode("ADD")
+    frame.spark:SetPoint("CENTER", frame.bar, "LEFT", 0, 0)
+
+    frame.icon = frame:CreateTexture(nil, "ARTWORK")
+    frame.icon:SetPoint("RIGHT", frame, "LEFT", -5, 0)
+    frame.icon:SetWidth(20)
+    frame.icon:SetHeight(20)
+    frame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+    frame.spellName = frame.bar:CreateFontString(nil, "OVERLAY")
+    frame.spellName:SetPoint("LEFT", frame.bar, "LEFT", 5, 0)
+    frame.spellName:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+    frame.spellName:SetTextColor(1, 1, 1, 1)
+
+    frame.castTime = frame.bar:CreateFontString(nil, "OVERLAY")
+    frame.castTime:SetPoint("RIGHT", frame.bar, "RIGHT", -5, 0)
+    frame.castTime:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+    frame.castTime:SetTextColor(1, 1, 1, 1)
+
+    -- Interruptible indicator
+    frame.interruptGlow = frame:CreateTexture(nil, "BACKGROUND")
+    frame.interruptGlow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    frame.interruptGlow:SetPoint("TOPLEFT", -8, 8)
+    frame.interruptGlow:SetPoint("BOTTOMRIGHT", 8, -8)
+    frame.interruptGlow:SetBlendMode("ADD")
+    frame.interruptGlow:SetVertexColor(0, 1, 0, 0.6)  -- Green glow = interruptible
+    frame.interruptGlow:Hide()
+
+    -- "INTERRUPT!" text overlay
+    frame.interruptText = frame:CreateFontString(nil, "OVERLAY")
+    frame.interruptText:SetPoint("TOP", frame, "BOTTOM", 0, -3)
+    frame.interruptText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+    frame.interruptText:SetTextColor(0, 1, 0, 1)
+    frame.interruptText:SetText("SPELL LOCK!")
+    frame.interruptText:Hide()
+
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self) if DoroxAurasDB and not DoroxAurasDB.locked then self:StartMoving() end end)
+    frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+    frame:Hide()
+    targetCastBar = frame
+end
+
+local function CreateGCDBar()
+    if gcdBar then return end
+    local frame = CreateFrame("Frame", "DoroxGCDFrame", UIParent)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, -175)
+    frame:SetWidth(100)
+    frame:SetHeight(6)
+    frame:SetFrameStrata("HIGH")
+
+    frame.bar = CreateFrame("StatusBar", nil, frame)
+    frame.bar:SetAllPoints()
+    frame.bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    frame.bar:SetStatusBarColor(0.8, 0.8, 0.8)
+    frame.bar:SetMinMaxValues(0, 1)
+    frame.bar:SetValue(0)
+
+    frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+    frame.bg:SetAllPoints()
+    frame.bg:SetTexture("Interface\\Tooltips\\UI-Tooltip-Background")
+    frame.bg:SetVertexColor(0, 0, 0, 0.6)
+
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self) if DoroxAurasDB and not DoroxAurasDB.locked then self:StartMoving() end end)
+    frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+    frame:Hide()
+    gcdBar = frame
+end
+
+local function CreateRangeIndicator()
+    if rangeIndicator then return end
+    local frame = CreateFrame("Frame", "DoroxRangeFrame", UIParent)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 150, -200)
+    frame:SetWidth(60)
+    frame:SetHeight(30)
+    frame:SetFrameStrata("HIGH")
+    frame:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 }
+    })
+    frame:SetBackdropColor(0, 0, 0, 0.8)
+    frame:SetBackdropBorderColor(0, 1, 0, 1)  -- Green = in range
+
+    frame.text = frame:CreateFontString(nil, "OVERLAY")
+    frame.text:SetPoint("CENTER", frame, "CENTER", 0, 0)
+    frame.text:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    frame.text:SetTextColor(0, 1, 0, 1)
+    frame.text:SetText("40y")
+
+    frame.warning = frame:CreateFontString(nil, "OVERLAY")
+    frame.warning:SetPoint("TOP", frame, "BOTTOM", 0, -3)
+    frame.warning:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+    frame.warning:SetTextColor(1, 0.3, 0.3, 1)
+    frame.warning:SetText("MOVE CLOSER!")
+    frame.warning:Hide()
+
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self) if DoroxAurasDB and not DoroxAurasDB.locked then self:StartMoving() end end)
+    frame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+    frame:Hide()
+    rangeIndicator = frame
 end
 
 local function CreateTargetHPBar()
@@ -250,9 +407,145 @@ local function UpdateTargetHP()
     targetHPBar:Show()
 end
 
+local function UpdateTargetCastBar()
+    if not targetCastBar or testMode then return end
+
+    if not UnitExists("target") then
+        targetCastBar:Hide()
+        return
+    end
+
+    local spell, _, _, _, startTime, endTime, _, _, notInterruptible = UnitCastingInfo("target")
+    if not spell then
+        spell, _, _, _, startTime, endTime, _, notInterruptible = UnitChannelInfo("target")
+        targetIsChanneling = (spell ~= nil)
+    else
+        targetIsChanneling = false
+    end
+
+    if spell then
+        local currentTime = GetTime() * 1000
+        local duration = endTime - startTime
+        local elapsed = currentTime - startTime
+        local remaining = (endTime - currentTime) / 1000
+        local progress = targetIsChanneling and (1 - elapsed / duration) or (elapsed / duration)
+
+        targetCastBar.bar:SetValue(progress)
+
+        local sparkPos = progress * targetCastBar.bar:GetWidth()
+        targetCastBar.spark:SetPoint("CENTER", targetCastBar.bar, "LEFT", sparkPos, 0)
+
+        targetCastBar.spellName:SetText(spell)
+        targetCastBar.castTime:SetFormattedText("%.1f", remaining)
+
+        local _, _, icon = GetSpellInfo(spell)
+        if icon then targetCastBar.icon:SetTexture(icon) end
+
+        -- Color based on interruptibility
+        if notInterruptible then
+            -- Cannot be interrupted - gray/dark
+            targetCastBar.bar:SetStatusBarColor(0.5, 0.5, 0.5)
+            targetCastBar:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+            targetCastBar.interruptGlow:Hide()
+            targetCastBar.interruptText:Hide()
+        else
+            -- Can be interrupted - bright red with green glow
+            if targetIsChanneling then
+                targetCastBar.bar:SetStatusBarColor(0.7, 0.3, 0.8)  -- Purple for channel
+            else
+                targetCastBar.bar:SetStatusBarColor(1, 0.2, 0.2)  -- Red for cast
+            end
+            targetCastBar:SetBackdropBorderColor(0, 1, 0, 1)  -- Green border = interrupt!
+            targetCastBar.interruptGlow:Show()
+            targetCastBar.interruptText:Show()
+        end
+
+        targetCastBar:Show()
+    else
+        targetCastBar:Hide()
+    end
+end
+
+local function UpdateGCD()
+    if not gcdBar or testMode then return end
+
+    local start, duration = GetSpellCooldown(GCD_SPELL)
+    if start and duration and duration > 0 and duration <= 1.5 then
+        -- GCD is active
+        local elapsed = GetTime() - start
+        local progress = elapsed / duration
+        gcdBar.bar:SetValue(progress)
+        gcdBar:Show()
+    else
+        gcdBar:Hide()
+    end
+end
+
+local function IsSpellInRange(spellName)
+    local inRange = IsSpellInRange(spellName, "target")
+    if inRange == nil then
+        return nil  -- Spell not found or no target
+    end
+    return inRange == 1
+end
+
+local function CheckRange()
+    if not rangeIndicator or testMode then return end
+
+    if not UnitExists("target") then
+        rangeIndicator:Hide()
+        return
+    end
+
+    -- Only show for attackable targets
+    if not UnitCanAttack("player", "target") then
+        rangeIndicator:Hide()
+        return
+    end
+
+    -- Check range using our spells
+    local inRange = nil
+    for _, spell in ipairs(RANGE_CHECK_SPELLS) do
+        inRange = IsSpellInRange(spell, "target")
+        if inRange ~= nil then break end
+    end
+
+    if inRange == nil then
+        rangeIndicator:Hide()
+        return
+    end
+
+    rangeIndicator:Show()
+
+    if inRange == 1 then
+        -- In range - green
+        rangeIndicator.text:SetText("OK")
+        rangeIndicator.text:SetTextColor(0, 1, 0, 1)
+        rangeIndicator:SetBackdropBorderColor(0, 1, 0, 1)
+        rangeIndicator.warning:Hide()
+        lastRangeAlertTime = 0
+    else
+        -- Out of range - red with warning
+        rangeIndicator.text:SetText("OOR")
+        rangeIndicator.text:SetTextColor(1, 0.3, 0.3, 1)
+        rangeIndicator:SetBackdropBorderColor(1, 0, 0, 1)
+        rangeIndicator.warning:Show()
+
+        -- Play alert sound (with cooldown)
+        local now = GetTime()
+        if lastRangeAlertTime == 0 or (now - lastRangeAlertTime) > 3 then
+            PlaySoundFile("Sound\\Interface\\MapPing.wav")
+            lastRangeAlertTime = now
+        end
+    end
+end
+
 function DoroxAurasCastBar:Initialize()
     CreatePlayerCastBar()
+    CreateTargetCastBar()
     CreateTargetHPBar()
+    CreateGCDBar()
+    CreateRangeIndicator()
 
     -- Hide default WoW cast bar
     CastingBarFrame:UnregisterAllEvents()
@@ -271,33 +564,69 @@ function DoroxAurasCastBar:Initialize()
     eventFrame:SetScript("OnEvent", function(self, event, unit)
         if event == "PLAYER_TARGET_CHANGED" then
             lastAlertTime = 0
+            lastRangeAlertTime = 0
             UpdateTargetHP()
+            UpdateTargetCastBar()
+            CheckRange()
         elseif unit == "player" then
             UpdateCastBar()
+        elseif unit == "target" then
+            UpdateTargetCastBar()
         end
     end)
+
     local updateFrame = CreateFrame("Frame")
     updateFrame.elapsed = 0
+    updateFrame.gcdElapsed = 0
     updateFrame:SetScript("OnUpdate", function(self, elapsed)
         self.elapsed = self.elapsed + elapsed
+        self.gcdElapsed = self.gcdElapsed + elapsed
+
+        -- Cast bars and HP at 30fps
         if self.elapsed >= 0.03 then
             self.elapsed = 0
             UpdateCastBar()
+            UpdateTargetCastBar()
             UpdateTargetHP()
+            CheckRange()
+        end
+
+        -- GCD at 60fps for smoothness
+        if self.gcdElapsed >= 0.016 then
+            self.gcdElapsed = 0
+            UpdateGCD()
         end
     end)
-    print("|cff00FF00[DoroxAuras]|r Cast Bar & Target HP loaded")
+    print("|cff00FF00[DoroxAuras]|r Cast Bar, Target Cast, GCD & Range loaded")
 end
 
 function DoroxAurasCastBar:Test()
     CreatePlayerCastBar()
+    CreateTargetCastBar()
     CreateTargetHPBar()
+    CreateGCDBar()
+    CreateRangeIndicator()
     testMode = true
+
+    -- Player cast bar
     playerCastBar.spellName:SetText("Soul Fire")
     playerCastBar.castTime:SetText("2.5")
     playerCastBar.bar:SetValue(0.5)
     playerCastBar.icon:SetTexture("Interface\\Icons\\Spell_Fire_Fireball02")
     playerCastBar:Show()
+
+    -- Target cast bar (interruptible)
+    targetCastBar.spellName:SetText("Frostbolt")
+    targetCastBar.castTime:SetText("1.8")
+    targetCastBar.bar:SetValue(0.6)
+    targetCastBar.bar:SetStatusBarColor(1, 0.2, 0.2)
+    targetCastBar:SetBackdropBorderColor(0, 1, 0, 1)
+    targetCastBar.icon:SetTexture("Interface\\Icons\\Spell_Frost_FrostBolt02")
+    targetCastBar.interruptGlow:Show()
+    targetCastBar.interruptText:Show()
+    targetCastBar:Show()
+
+    -- Target HP bar
     targetHPBar.percent:SetText("32.5%")
     targetHPBar.bar:SetValue(32.5)
     targetHPBar.targetName:SetText("Test Boss")
@@ -305,6 +634,18 @@ function DoroxAurasCastBar:Test()
     targetHPBar.spellReminder:Show()
     targetHPBar.glow:Show()
     targetHPBar:Show()
+
+    -- GCD bar
+    gcdBar.bar:SetValue(0.7)
+    gcdBar:Show()
+
+    -- Range indicator (out of range)
+    rangeIndicator.text:SetText("OOR")
+    rangeIndicator.text:SetTextColor(1, 0.3, 0.3, 1)
+    rangeIndicator:SetBackdropBorderColor(1, 0, 0, 1)
+    rangeIndicator.warning:Show()
+    rangeIndicator:Show()
+
     print("|cff00FF00[DoroxAuras]|r Test Mode (5 sec)")
     local timer = CreateFrame("Frame")
     timer.t = 0
@@ -314,9 +655,15 @@ function DoroxAurasCastBar:Test()
             s:SetScript("OnUpdate", nil)
             testMode = false
             playerCastBar:Hide()
+            targetCastBar:Hide()
+            targetCastBar.interruptGlow:Hide()
+            targetCastBar.interruptText:Hide()
             targetHPBar:Hide()
             targetHPBar.glow:Hide()
             targetHPBar.spellReminder:Hide()
+            gcdBar:Hide()
+            rangeIndicator:Hide()
+            rangeIndicator.warning:Hide()
         end
     end)
 end
@@ -327,24 +674,44 @@ end
 
 function DoroxAurasCastBar:Unlock()
     CreatePlayerCastBar()
+    CreateTargetCastBar()
     CreateTargetHPBar()
+    CreateGCDBar()
+    CreateRangeIndicator()
     testMode = true
-    playerCastBar.spellName:SetText("Cast Bar")
+
+    playerCastBar.spellName:SetText("Player Cast")
     playerCastBar.castTime:SetText("--")
     playerCastBar.bar:SetValue(0.5)
     playerCastBar:Show()
+
+    targetCastBar.spellName:SetText("Target Cast")
+    targetCastBar.castTime:SetText("--")
+    targetCastBar.bar:SetValue(0.5)
+    targetCastBar:Show()
+
     targetHPBar.percent:SetText("35%")
     targetHPBar.bar:SetValue(35)
     targetHPBar.targetName:SetText("Target HP")
     targetHPBar:Show()
-    print("|cff00FF00[DoroxAuras]|r Cast Bar frames unlocked - drag to reposition")
+
+    gcdBar.bar:SetValue(0.5)
+    gcdBar:Show()
+
+    rangeIndicator.text:SetText("OK")
+    rangeIndicator:Show()
+
+    print("|cff00FF00[DoroxAuras]|r All cast bar frames unlocked - drag to reposition")
 end
 
 function DoroxAurasCastBar:Lock()
     testMode = false
     if playerCastBar then playerCastBar:Hide() end
+    if targetCastBar then targetCastBar:Hide() end
     if targetHPBar then targetHPBar:Hide() end
-    print("|cff00FF00[DoroxAuras]|r Cast Bar frames locked")
+    if gcdBar then gcdBar:Hide() end
+    if rangeIndicator then rangeIndicator:Hide() end
+    print("|cff00FF00[DoroxAuras]|r All cast bar frames locked")
 end
 
 function DoroxAurasCastBar:ToggleDummyMode()

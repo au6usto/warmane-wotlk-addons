@@ -14,6 +14,73 @@ local defaults = {
         levelup = "Sound\\Interface\\LevelUp.wav",
     },
 
+    -- Use custom HD icons instead of default WoW icons
+    useCustomIcons = true,
+
+    -- Custom icon overrides (spell name -> texture path)
+    -- Only includes spells that are actually configured in auras below
+    -- To add more: copy icon to textures/icons/ and add mapping here
+    iconOverrides = {
+        -- Target Debuffs
+        ["Corruption"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\corruption",
+        ["Unstable Affliction"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\unstableaffliction",
+        ["Haunt"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\haunt",
+        ["Immolate"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\immolate",
+        ["Curse of Doom"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\curseofdoom",
+        ["Curse of Agony"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\curseofagony",
+        ["Curse of Tongues"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\curseoftongues",
+        ["Shadowflame"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\shadowflame",
+        ["Fear"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\fear",
+        ["Banish"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\banish",
+
+        -- Self Buffs
+        ["Fel Armor"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\felarmor",
+        ["Life Tap"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\lifetap",
+        ["Soul Link"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\soullink",
+        ["Demonic Empowerment"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\demonicempowerment",
+        ["Immolation Aura"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\immolationaura",
+        ["Demonic Circle: Summon"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\demoniccircle",
+        ["Demonic Circle: Teleport"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\demoniccircleteleport",
+        ["Soulstone Resurrection"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\soulstone",
+
+        -- Procs
+        ["Decimation"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\decimation",
+        ["Molten Core"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\moltencore",
+        ["Shadow Trance"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\shadowtrance",
+        ["Eradication"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\eradication",
+
+        -- Fillers
+        ["Shadow Bolt"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\shadowbolt",
+        ["Incinerate"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\incinerate",
+
+        -- Raid Buffs
+        ["Gift of the Wild"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\giftofthewild",
+        ["Mark of the Wild"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\giftofthewild",
+        ["Arcane Brilliance"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\arcaneintellect",
+        ["Arcane Intellect"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\arcaneintellect",
+        ["Dalaran Brilliance"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\arcaneintellect",
+        ["Fel Intelligence"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\arcaneintellect",
+        ["Greater Blessing of Kings"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofkings",
+        ["Blessing of Kings"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofkings",
+        ["Drums of the Forgotten Kings"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofkings",
+        ["Greater Blessing of Wisdom"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofwisdom",
+        ["Blessing of Wisdom"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofwisdom",
+        ["Mana Spring"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofwisdom",
+        ["Greater Blessing of Sanctuary"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofsanctuary",
+        ["Blessing of Sanctuary"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\blessingofsanctuary",
+        ["Prayer of Spirit"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\spirit",
+        ["Divine Spirit"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\spirit",
+        ["Prayer of Fortitude"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\fortitude",
+        ["Power Word: Fortitude"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\fortitude",
+        ["Blood Pact"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\fortitude",
+        ["Commanding Shout"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\fortitude",
+        ["Flask of the Frost Wyrm"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\flask",
+        ["Flask of Pure Mojo"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\flask",
+        ["Flask of Endless Rage"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\flask",
+        ["Flask of Stoneblood"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\flask",
+        ["Well Fed"] = "Interface\\AddOns\\DoroxAuras\\textures\\icons\\wellfed",
+    },
+
     groups = {
         target_debuffs = {
             anchor = "CENTER",

@@ -136,7 +136,7 @@ function DoroxAurasTrackers:GetDemonicCircleStatus()
     return "ready", distance, nil
 end
 
--- Get spell texture (cached)
+-- Get spell texture (cached, with custom icon override support)
 local function GetSpellTexture(spellName)
     if spellTextureCache[spellName] then
         if DoroxAurasDebug and DoroxAurasDebug:IsEnabled() then
@@ -145,6 +145,18 @@ local function GetSpellTexture(spellName)
         return spellTextureCache[spellName]
     end
 
+    -- Check for custom icon override first
+    local config = DoroxAurasConfig:GetConfig()
+    if config.useCustomIcons and config.iconOverrides and config.iconOverrides[spellName] then
+        local customIcon = config.iconOverrides[spellName]
+        spellTextureCache[spellName] = customIcon
+        if DoroxAurasDebug and DoroxAurasDebug:IsEnabled() then
+            DoroxAurasDebug:LogIconLookup(spellName, customIcon .. " (custom)", false)
+        end
+        return customIcon
+    end
+
+    -- Fall back to WoW default icon
     local _, _, icon = GetSpellInfo(spellName)
     if icon then
         spellTextureCache[spellName] = icon
