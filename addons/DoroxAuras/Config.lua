@@ -726,6 +726,7 @@ local defaults = {
             name = "Grand Spellstone",
             slot = "main",
             enchant = "Grand Spellstone",
+            item_id = 41196,  -- Grand Spellstone item
             group = "self_buffs",
             show_missing = true,
             refresh_warn = 600,  -- 10 minutes

@@ -796,13 +796,10 @@ function DoroxAurasTrackers:UpdateWeaponEnchants()
             expiration = offHandExpiration and (offHandExpiration / 1000) or nil
         end
 
-        if hasEnchant then
-            -- Get texture - try spell first, fallback to item
-            local texture = GetSpellTexture(enchantConfig.enchant)
-            if texture == "Interface\\Icons\\INV_Misc_QuestionMark" then
-                texture = "Interface\\Icons\\INV_Misc_Gem_01"
-            end
+        -- Get texture using item_id if available
+        local texture = GetAuraTexture(enchantConfig)
 
+        if hasEnchant then
             -- Check if we should hide when "healthy"
             if enchantConfig.hide_when_healthy and expiration and enchantConfig.refresh_warn then
                 if expiration > enchantConfig.refresh_warn then
@@ -818,7 +815,6 @@ function DoroxAurasTrackers:UpdateWeaponEnchants()
             end
         else
             if enchantConfig.show_missing then
-                local texture = "Interface\\Icons\\INV_Misc_Gem_01"
                 local iconFrame = DoroxAurasDisplay:GetIcon(enchantConfig)
                 if iconFrame then
                     DoroxAurasDisplay:ShowMissing(iconFrame, texture, enchantConfig.name, enchantConfig.glow_on_missing)
