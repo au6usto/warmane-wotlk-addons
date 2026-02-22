@@ -7,6 +7,7 @@ local talentCache = {}
 local lastTalentCheck = 0
 local cachedSpec = nil
 local lastSpecCheck = 0
+local noIconAlertPlayed = {}  -- Track which no_icon alerts have played
 
 -- Get current warlock spec (shared function)
 local function GetWarlockSpec()
@@ -648,8 +649,28 @@ function DoroxAurasTrackers:UpdateUnit(unit)
             end
 
             if found then
+                -- For only_show_missing auras, hide when found (e.g., Soul Link)
+                if auraConfig.only_show_missing then
+                    DoroxAurasDisplay:HideAura(auraConfig)
+                -- For no_icon auras, just play sound/alert but don't show icon
+                elseif auraConfig.no_icon then
+                    -- Only play once per buff activation
+                    if not noIconAlertPlayed[auraConfig.name] then
+                        noIconAlertPlayed[auraConfig.name] = true
+                        -- Play sound
+                        if auraConfig.sound and DoroxAurasAlerts then
+                            DoroxAurasAlerts:PlaySound(auraConfig.sound)
+                        end
+                        -- Show big alert
+                        if auraConfig.big_alert then
+                            local alertColor = auraConfig.alert_color or {1, 1, 0}
+                            local alertText = auraConfig.alert_text or auraConfig.name
+                            local stacks_text = stacks and stacks > 1 and (" x" .. stacks) or ""
+                            DoroxAurasDisplay:ShowProcAlert(alertText .. stacks_text, auraConfig.alert_subtext, icon, alertColor, 3)
+                        end
+                    end
                 -- Check if we should hide when "healthy" (active)
-                if auraConfig.hide_when_healthy then
+                elseif auraConfig.hide_when_healthy then
                     -- For permanent buffs (no duration) or buffs above refresh threshold: hide
                     if not remaining or not auraConfig.refresh_warn or remaining > auraConfig.refresh_warn then
                         DoroxAurasDisplay:HideAura(auraConfig)
@@ -668,7 +689,11 @@ function DoroxAurasTrackers:UpdateUnit(unit)
                     DoroxAurasDisplay:ShowAura(auraConfig, icon, remaining, duration, stacks, syncStatus)
                 end
             else
-                -- Aura not found
+                -- Aura not found - reset no_icon alert flag
+                if auraConfig.no_icon then
+                    noIconAlertPlayed[auraConfig.name] = nil
+                end
+
                 if auraConfig.show_missing then
                     -- Show as missing (desaturated)
                     local texture = GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
@@ -952,7 +977,7 @@ function DoroxAurasTrackers:UpdateManaAlerts()
             else
                 color = {1, 0.8, 0}  -- Yellow
             end
-            DoroxAurasDisplay:ShowProcAlert(alertText, "Mana Low!", texture, color, 2, "map_ping")
+            DoroxAurasDisplay:ShowProcAlert(alertText, "Mana Low!", texture, color, 4, "map_ping")
             manaAlertShown = true
             lastManaAlertTime = now
         end

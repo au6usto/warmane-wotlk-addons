@@ -350,7 +350,7 @@ local defaults = {
             type = "buff",
             spell = "Soul Link",
             show_missing = true,
-            hide_when_healthy = true,  -- Only show when MISSING, hide when active
+            only_show_missing = true,  -- NEVER show when active, only when missing
             requires_talent = "Soul Link",  -- Only show if talented (Demonology)
             priority = 3,
         },
@@ -450,30 +450,29 @@ local defaults = {
         },
 
         -- ==================== PROCS ====================
-        -- These only show when the proc buff is ACTIVE (no show_missing)
+        -- Decimation and Molten Core: NO icons, just big center alerts
+        -- The icons were causing display issues, alerts work better for procs
         {
-            name = "Decimation",
+            name = "Decimation Alert",
             group = "procs",
             unit = "player",
             type = "buff",
             spell = "Decimation",
-            glow = true,
             sound = "raid_warning",
             big_alert = true,
             alert_text = "DECIMATION!",
             alert_subtext = "Cast Soul Fire!",
             alert_color = {1, 0.4, 0},  -- Orange
             requires_spec = "DEMO",
-            requires_talent = "Decimation",
+            no_icon = true,  -- Don't create icon frame
             priority = 1,
         },
         {
-            name = "Molten Core",
+            name = "Molten Core Alert",
             group = "procs",
             unit = "player",
             type = "buff",
             spell = "Molten Core",
-            glow = true,
             sound = "raid_warning",
             show_stacks = true,
             big_alert = true,
@@ -481,7 +480,7 @@ local defaults = {
             alert_subtext = "Incinerate or Soul Fire!",
             alert_color = {1, 0.5, 0},  -- Orange
             requires_spec = "DEMO",
-            requires_talent = "Molten Core",
+            no_icon = true,  -- Don't create icon frame
             priority = 2,
         },
         {
