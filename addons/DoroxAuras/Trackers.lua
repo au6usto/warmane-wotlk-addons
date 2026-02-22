@@ -1048,7 +1048,17 @@ function DoroxAurasTrackers:UpdateCooldowns()
                 end
             end
 
-            if specOk then
+            -- Check requires_buff (e.g., only show Immolation Aura when in Metamorphosis)
+            local buffOk = true
+            if specOk and auraConfig.requires_buff then
+                local hasBuff = UnitBuff("player", auraConfig.requires_buff)
+                if not hasBuff then
+                    DoroxAurasDisplay:HideAura(auraConfig)
+                    buffOk = false
+                end
+            end
+
+            if specOk and buffOk then
                 -- Get cooldown info
                 local start, duration, enabled = GetSpellCooldown(auraConfig.spell)
 

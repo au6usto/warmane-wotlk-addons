@@ -15,7 +15,7 @@ local defaults = {
     },
 
     -- Use custom HD icons instead of default WoW icons
-    useCustomIcons = true,
+    useCustomIcons = false,
 
     -- Custom icon overrides (spell name -> texture path)
     -- Only includes spells that are actually configured in auras below
@@ -175,6 +175,7 @@ local defaults = {
             spell = "Unstable Affliction",
             refresh_warn = 2,
             show_missing = true,
+            requires_spec = "AFFLI",
             priority = 2,
         },
         {
@@ -186,6 +187,7 @@ local defaults = {
             spell = "Haunt",
             refresh_warn = 1,
             show_missing = true,
+            requires_spec = "AFFLI",
             priority = 3,
         },
         {
@@ -196,6 +198,8 @@ local defaults = {
             own = true,
             spell = "Immolate",
             refresh_warn = 3,
+            show_missing = true,
+            requires_spec = "DEMO",  -- Only show for Demo spec
             priority = 4,
         },
         {
@@ -356,13 +360,15 @@ local defaults = {
             priority = 4,
         },
         {
-            name = "Immolation Aura",
-            group = "self_buffs",
+            name = "Immolation Aura CD",
+            group = "cooldowns",
             unit = "player",
-            type = "buff",
+            type = "cooldown",
             spell = "Immolation Aura",
-            requires_talent = "Metamorphosis",  -- Demonology 51-point talent
-            priority = 5,
+            show_when_ready = true,
+            requires_spec = "DEMO",
+            requires_buff = "Metamorphosis",  -- Only show when in Meta form
+            priority = 2,
         },
 
         -- ==================== COOLDOWN TRACKING ====================
