@@ -648,10 +648,10 @@ function DoroxAurasTrackers:UpdateUnit(unit)
             end
 
             if found then
-                -- Check if we should hide when "healthy" (active with plenty of time left)
-                if auraConfig.hide_when_healthy and remaining and auraConfig.refresh_warn then
-                    if remaining > auraConfig.refresh_warn then
-                        -- Aura is healthy, hide it
+                -- Check if we should hide when "healthy" (active)
+                if auraConfig.hide_when_healthy then
+                    -- For permanent buffs (no duration) or buffs above refresh threshold: hide
+                    if not remaining or not auraConfig.refresh_warn or remaining > auraConfig.refresh_warn then
                         DoroxAurasDisplay:HideAura(auraConfig)
                     else
                         -- Aura is expiring soon, show it
@@ -678,7 +678,11 @@ function DoroxAurasTrackers:UpdateUnit(unit)
                         DoroxAurasDisplay:ArrangeGroup(auraConfig.group)
                     end
                 else
-                    DoroxAurasDisplay:HideAura(auraConfig)
+                    -- No show_missing - just hide if icon exists (don't create new icon)
+                    local container = DoroxAurasDisplay:GetGroupContainers()[auraConfig.group]
+                    if container and container.icons[auraConfig.name] then
+                        DoroxAurasDisplay:HideAura(auraConfig)
+                    end
                 end
             end
         end
