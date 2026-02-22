@@ -222,6 +222,8 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Curse of Doom",
+            show_missing = true,
+            requires_spec = "DEMO",
             priority = 6,
         },
         {
