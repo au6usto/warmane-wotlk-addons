@@ -166,24 +166,39 @@ function DoroxAurasTrackers:GetDemonicCircleStatus()
 end
 
 -- Get spell texture (always uses WoW default icons now)
-local function GetSpellTexture(spellName)
-    -- Always use WoW default icons - no custom icon support
-    if spellTextureCache[spellName] then
-        return spellTextureCache[spellName]
+local function GetSpellTexture(spellNameOrId)
+    -- Check cache first
+    local cacheKey = tostring(spellNameOrId)
+    if spellTextureCache[cacheKey] then
+        return spellTextureCache[cacheKey]
     end
 
-    -- Get WoW default icon
-    local _, _, icon = GetSpellInfo(spellName)
+    -- Get WoW default icon (works with spell name OR spell ID)
+    local _, _, icon = GetSpellInfo(spellNameOrId)
     if icon then
-        spellTextureCache[spellName] = icon
+        spellTextureCache[cacheKey] = icon
         return icon
     end
 
     local missingIcon = "Interface\\Icons\\INV_Misc_QuestionMark"
     if DoroxAurasDebug and DoroxAurasDebug:IsEnabled() then
-        DoroxAurasDebug:LogIconLookup(spellName, missingIcon, false)
+        DoroxAurasDebug:LogIconLookup(cacheKey, missingIcon, false)
     end
     return missingIcon
+end
+
+-- Get texture for an aura config (uses spell_id if available for reliable icon lookup)
+local function GetAuraTexture(auraConfig)
+    -- First try spell_id (most reliable - works for any spell)
+    if auraConfig.spell_id then
+        return GetSpellTexture(auraConfig.spell_id)
+    end
+    -- Then try hardcoded texture path
+    if auraConfig.texture then
+        return auraConfig.texture
+    end
+    -- Fall back to spell name
+    return GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
 end
 
 -- Check if player is in raid/party
@@ -738,8 +753,8 @@ function DoroxAurasTrackers:UpdateUnit(unit)
 
                 if auraConfig.show_missing then
                     -- Show as missing (desaturated)
-                    -- Use hardcoded texture if available, else fetch from spell
-                    local texture = auraConfig.texture or GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
+                    -- Use spell_id for reliable icon lookup
+                    local texture = GetAuraTexture(auraConfig)
                     local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
                     if iconFrame then
                         DoroxAurasDisplay:ShowMissing(iconFrame, texture, nil, auraConfig.glow_on_missing)
