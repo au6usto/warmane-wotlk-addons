@@ -555,9 +555,10 @@ local defaults = {
             priority = 9,
         },
 
-        -- ==================== RAID BUFFS (show when missing) ====================
+        -- ==================== RAID BUFFS (show when missing or < 10 min) ====================
         -- Smart tracking: only shows if required class is in raid
         -- Paladin blessings: limited by number of paladins in raid
+        -- All raid buffs use hide_when_healthy with refresh_warn = 600 (10 min)
         {
             name = "Gift of the Wild",
             group = "raid_buffs",
@@ -565,6 +566,8 @@ local defaults = {
             type = "buff",
             spells = {"Gift of the Wild", "Mark of the Wild"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             required_class = "DRUID",
             priority = 1,
@@ -577,6 +580,8 @@ local defaults = {
             -- Mage buffs OR Fel Intelligence (Felhunter) - they don't stack
             spells = {"Arcane Brilliance", "Arcane Intellect", "Dalaran Brilliance", "Fel Intelligence"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             -- No required_class - can come from Mage OR Warlock pet
             priority = 2,
@@ -589,6 +594,8 @@ local defaults = {
             -- Also includes Drums of Forgotten Kings (Leatherworking)
             spells = {"Greater Blessing of Kings", "Blessing of Kings", "Drums of the Forgotten Kings"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             required_class = "PALADIN",
             is_paladin_blessing = true,
@@ -603,6 +610,8 @@ local defaults = {
             -- Also includes Mana Spring Totem effect
             spells = {"Greater Blessing of Wisdom", "Blessing of Wisdom", "Mana Spring"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             required_class = "PALADIN",
             is_paladin_blessing = true,
@@ -616,6 +625,8 @@ local defaults = {
             type = "buff",
             spells = {"Greater Blessing of Sanctuary", "Blessing of Sanctuary"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             required_class = "PALADIN",
             is_paladin_blessing = true,
@@ -630,6 +641,8 @@ local defaults = {
             -- Priest buffs OR Fel Intelligence - they provide spirit
             spells = {"Prayer of Spirit", "Divine Spirit", "Fel Intelligence"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             -- No required_class - can come from Priest OR Warlock pet
             priority = 7,
@@ -642,6 +655,8 @@ local defaults = {
             -- Priest buffs OR Blood Pact (Imp) OR Commanding Shout (Warrior)
             spells = {"Prayer of Fortitude", "Power Word: Fortitude", "Blood Pact", "Commanding Shout"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             -- No required_class - multiple sources
             priority = 8,
@@ -653,6 +668,8 @@ local defaults = {
             type = "buff",
             spells = {"Flask of the Frost Wyrm", "Flask of Pure Mojo", "Flask of Endless Rage", "Flask of Stoneblood"},
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             priority = 9,
         },
@@ -663,6 +680,8 @@ local defaults = {
             type = "buff",
             spell = "Well Fed",
             show_missing = true,
+            refresh_warn = 600,
+            hide_when_healthy = true,
             in_raid_only = true,
             priority = 10,
         },
