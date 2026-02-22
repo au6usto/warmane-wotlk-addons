@@ -175,7 +175,7 @@ local defaults = {
             spell = "Unstable Affliction",
             refresh_warn = 2,
             show_missing = true,
-            requires_spell = "Unstable Affliction",  -- Only show if spell is known
+            -- Removed requires_spell - if debuff is active, you obviously know it
             priority = 2,
         },
         {
@@ -187,7 +187,7 @@ local defaults = {
             spell = "Haunt",
             refresh_warn = 1,
             show_missing = true,
-            requires_spell = "Haunt",  -- Only show if spell is known
+            -- Removed requires_spell - if debuff is active, you obviously know it
             priority = 3,
         },
         {
@@ -465,7 +465,7 @@ local defaults = {
             alert_text = "DECIMATION!",
             alert_subtext = "Cast Soul Fire!",
             alert_color = {1, 0.4, 0},  -- Orange
-            requires_spell = "Decimation",  -- Only if talent known
+            -- Removed requires_spell - proc only shows when active anyway
             priority = 1,
         },
         {
@@ -482,7 +482,7 @@ local defaults = {
             alert_text = "MOLTEN CORE!",
             alert_subtext = "Incinerate or Soul Fire!",
             alert_color = {1, 0.5, 0},  -- Orange
-            requires_spell = "Molten Core",  -- Only if talent known
+            -- Removed requires_spell - proc only shows when active anyway
             priority = 2,
         },
         {
@@ -572,7 +572,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             required_class = "DRUID",
             priority = 1,
         },
@@ -587,7 +587,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             required_class = "MAGE",
             priority = 2,
         },
@@ -602,7 +602,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             required_class = "PALADIN",
             is_paladin_blessing = true,
             blessing_priority = 1,
@@ -619,7 +619,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             required_class = "PALADIN",
             is_paladin_blessing = true,
             blessing_priority = 2,
@@ -635,7 +635,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             required_class = "PALADIN",
             is_paladin_blessing = true,
             blessing_priority = 3,
@@ -652,7 +652,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             -- No required_class - can come from Priest OR Warlock pet
             priority = 7,
         },
@@ -667,7 +667,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             -- No required_class - multiple sources
             priority = 8,
         },
@@ -681,7 +681,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             priority = 9,
         },
         {
@@ -694,7 +694,7 @@ local defaults = {
             show_missing = true,
             refresh_warn = 600,
             hide_when_healthy = true,
-            in_raid_only = true,
+            in_group_only = false,
             priority = 10,
         },
 
@@ -706,7 +706,7 @@ local defaults = {
             type = "buff",
             spells = {"Well Fed", "Kibler's Bits", "Sporeling Snack"},
             show_missing = true,
-            in_raid_only = true,
+            in_group_only = false,
             requires_pet = "Felguard",  -- Only show for Felguard (Demo)
             priority = 11,
         },
@@ -717,7 +717,7 @@ local defaults = {
             type = "buff",
             spells = {"Strength", "Stamina", "Agility"},  -- Scroll buff names
             show_missing = true,
-            in_raid_only = true,
+            in_group_only = false,
             requires_pet = "Felguard",
             priority = 12,
         },
