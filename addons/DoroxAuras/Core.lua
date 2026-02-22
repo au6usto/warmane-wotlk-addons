@@ -130,8 +130,9 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1, ...)
         DoroxAurasTrackers:UpdateManaAlerts()
 
     elseif event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_TALENT_UPDATE" then
-        -- Talent points changed - invalidate spec cache and update
+        -- Talent points changed - invalidate caches and update
         DoroxAurasTrackers:InvalidateSpecCache()
+        DoroxAurasTrackers:InvalidateSpellCache()
         DoroxAurasTrackers:UpdateAll()
     end
 end)

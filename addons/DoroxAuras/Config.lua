@@ -175,7 +175,7 @@ local defaults = {
             spell = "Unstable Affliction",
             refresh_warn = 2,
             show_missing = true,
-            requires_spec = "AFFLI",
+            requires_spell = "Unstable Affliction",  -- Only show if spell is known
             priority = 2,
         },
         {
@@ -187,7 +187,7 @@ local defaults = {
             spell = "Haunt",
             refresh_warn = 1,
             show_missing = true,
-            requires_spec = "AFFLI",
+            requires_spell = "Haunt",  -- Only show if spell is known
             priority = 3,
         },
         {
@@ -199,7 +199,7 @@ local defaults = {
             spell = "Immolate",
             refresh_warn = 3,
             show_missing = true,
-            requires_spec = "DEMO",  -- Only show for Demo spec
+            -- No requires_spell - all warlocks have Immolate
             priority = 4,
         },
         {
@@ -223,7 +223,7 @@ local defaults = {
             own = true,
             spell = "Curse of Doom",
             show_missing = true,
-            requires_spec = "DEMO",
+            -- All warlocks have CoD, no restriction needed
             priority = 6,
         },
         {
@@ -235,7 +235,7 @@ local defaults = {
             spell = "Curse of Agony",
             refresh_warn = 2,
             show_missing = true,
-            requires_spec = "AFFLI",
+            -- All warlocks have CoA, no restriction needed
             priority = 7,
         },
         {
@@ -450,37 +450,38 @@ local defaults = {
         },
 
         -- ==================== PROCS ====================
-        -- Decimation and Molten Core: NO icons, just big center alerts
-        -- The icons were causing display issues, alerts work better for procs
+        -- Decimation and Molten Core show icons when active + big center alert
         {
-            name = "Decimation Alert",
+            name = "Decimation",
             group = "procs",
             unit = "player",
             type = "buff",
             spell = "Decimation",
+            texture = "Interface\\Icons\\Spell_Fire_FireBolt02",  -- Hardcoded texture
+            glow = true,
             sound = "raid_warning",
             big_alert = true,
             alert_text = "DECIMATION!",
             alert_subtext = "Cast Soul Fire!",
             alert_color = {1, 0.4, 0},  -- Orange
-            requires_spec = "DEMO",
-            no_icon = true,  -- Don't create icon frame
+            requires_spell = "Decimation",  -- Only if talent known
             priority = 1,
         },
         {
-            name = "Molten Core Alert",
+            name = "Molten Core",
             group = "procs",
             unit = "player",
             type = "buff",
             spell = "Molten Core",
+            texture = "Interface\\Icons\\Ability_Warlock_MoltenCore",  -- Hardcoded texture
+            glow = true,
             sound = "raid_warning",
             show_stacks = true,
             big_alert = true,
             alert_text = "MOLTEN CORE!",
             alert_subtext = "Incinerate or Soul Fire!",
             alert_color = {1, 0.5, 0},  -- Orange
-            requires_spec = "DEMO",
-            no_icon = true,  -- Don't create icon frame
+            requires_spell = "Molten Core",  -- Only if talent known
             priority = 2,
         },
         {

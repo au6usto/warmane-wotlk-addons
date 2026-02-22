@@ -47,6 +47,28 @@ function DoroxAurasTrackers:InvalidateSpecCache()
     lastSpecCheck = 0
 end
 
+-- Check if player knows a spell (has it in spellbook)
+local spellKnownCache = {}
+local function IsSpellKnown(spellName)
+    if spellKnownCache[spellName] ~= nil then
+        return spellKnownCache[spellName]
+    end
+    -- GetSpellLink returns nil if spell is not in player's spellbook
+    local name = GetSpellInfo(spellName)
+    if not name then
+        spellKnownCache[spellName] = false
+        return false
+    end
+    local link = GetSpellLink(name)
+    spellKnownCache[spellName] = (link ~= nil)
+    return spellKnownCache[spellName]
+end
+
+-- Invalidate spell known cache (call when talents change)
+function DoroxAurasTrackers:InvalidateSpellCache()
+    spellKnownCache = {}
+end
+
 -- Demonic Circle tracking
 local demonicCircle = {
     exists = false,
@@ -351,6 +373,16 @@ local function CheckAuraConditions(auraConfig)
         end
     end
 
+    -- Check spell requirement (player must know the spell)
+    if auraConfig.requires_spell then
+        if not IsSpellKnown(auraConfig.requires_spell) then
+            if debug then
+                DoroxAurasDebug:LogConditionCheck(auraConfig, false, "spell_not_known:" .. auraConfig.requires_spell)
+            end
+            return false
+        end
+    end
+
     -- Check pet requirement
     if auraConfig.requires_pet then
         local currentPet = GetPetType()
@@ -443,13 +475,17 @@ local function CheckAura(auraConfig, unit)
                 if auraConfig.own then
                     if caster == "player" or caster == "pet" or caster == "vehicle" then
                         local remaining = expirationTime and (expirationTime - GetTime()) or nil
-                        return true, icon, remaining, duration, count
+                        -- Use hardcoded texture if icon is nil and config has texture
+                        local finalIcon = icon or auraConfig.texture or GetSpellTexture(spellName)
+                        return true, finalIcon, remaining, duration, count
                     end
                     -- Not ours, continue searching for our version
                 else
                     -- Any caster is fine
                     local remaining = expirationTime and (expirationTime - GetTime()) or nil
-                    return true, icon, remaining, duration, count
+                    -- Use hardcoded texture if icon is nil and config has texture
+                    local finalIcon = icon or auraConfig.texture or GetSpellTexture(spellName)
+                    return true, finalIcon, remaining, duration, count
                 end
             end
         end
@@ -702,7 +738,8 @@ function DoroxAurasTrackers:UpdateUnit(unit)
 
                 if auraConfig.show_missing then
                     -- Show as missing (desaturated)
-                    local texture = GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
+                    -- Use hardcoded texture if available, else fetch from spell
+                    local texture = auraConfig.texture or GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
                     local iconFrame = DoroxAurasDisplay:GetIcon(auraConfig)
                     if iconFrame then
                         DoroxAurasDisplay:ShowMissing(iconFrame, texture, nil, auraConfig.glow_on_missing)
