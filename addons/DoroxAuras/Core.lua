@@ -128,6 +128,11 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1, ...)
     elseif event == "UNIT_MANA" and arg1 == "player" then
         -- Update mana alerts (Life Tap reminder)
         DoroxAurasTrackers:UpdateManaAlerts()
+
+    elseif event == "CHARACTER_POINTS_CHANGED" or event == "PLAYER_TALENT_UPDATE" then
+        -- Talent points changed - invalidate spec cache and update
+        DoroxAurasTrackers:InvalidateSpecCache()
+        DoroxAurasTrackers:UpdateAll()
     end
 end)
 
@@ -149,6 +154,8 @@ eventFrame:RegisterEvent("ZONE_CHANGED")
 eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 eventFrame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 eventFrame:RegisterEvent("UNIT_MANA")
+eventFrame:RegisterEvent("CHARACTER_POINTS_CHANGED")
+eventFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
 
 -- Slash commands
 SLASH_DOROXAURAS1 = "/da"

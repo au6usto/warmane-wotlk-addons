@@ -41,6 +41,12 @@ function DoroxAurasTrackers:GetSpec()
     return GetWarlockSpec()
 end
 
+-- Invalidate spec cache (call when talents change)
+function DoroxAurasTrackers:InvalidateSpecCache()
+    cachedSpec = nil
+    lastSpecCheck = 0
+end
+
 -- Demonic Circle tracking
 local demonicCircle = {
     exists = false,
