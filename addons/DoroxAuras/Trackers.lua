@@ -48,20 +48,35 @@ function DoroxAurasTrackers:InvalidateSpecCache()
 end
 
 -- Check if player knows a spell (has it in spellbook)
+-- Uses spellbook iteration which is more reliable than GetSpellLink in 3.3.5
 local spellKnownCache = {}
+local lastSpellKnownCheck = 0
 local function IsSpellKnown(spellName)
+    -- Refresh cache every 5 seconds (in case of talent changes)
+    local now = GetTime()
+    if (now - lastSpellKnownCheck) > 5 then
+        spellKnownCache = {}
+        lastSpellKnownCheck = now
+    end
+
     if spellKnownCache[spellName] ~= nil then
         return spellKnownCache[spellName]
     end
-    -- GetSpellLink returns nil if spell is not in player's spellbook
-    local name = GetSpellInfo(spellName)
-    if not name then
-        spellKnownCache[spellName] = false
-        return false
+
+    -- Iterate through spellbook to find the spell
+    local i = 1
+    while true do
+        local sName = GetSpellName(i, BOOKTYPE_SPELL)
+        if not sName then break end
+        if sName == spellName then
+            spellKnownCache[spellName] = true
+            return true
+        end
+        i = i + 1
     end
-    local link = GetSpellLink(name)
-    spellKnownCache[spellName] = (link ~= nil)
-    return spellKnownCache[spellName]
+
+    spellKnownCache[spellName] = false
+    return false
 end
 
 -- Invalidate spell known cache (call when talents change)

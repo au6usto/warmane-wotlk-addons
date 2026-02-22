@@ -194,6 +194,7 @@ SlashCmdList["DOROXAURAS"] = function(msg)
         print("  |cffFFFF00/da debugexport|r - Export debug log")
         print("  |cffFFFF00/da debugclear|r - Clear debug log")
         print("  |cffFFFF00/da debugauras|r - Dump all current auras on target")
+        print("  |cffFFFF00/da debugtarget|r - Debug target debuffs tracking")
 
     elseif cmd == "toggle" then
         local config = DoroxAurasConfig:GetConfig()
@@ -409,6 +410,96 @@ SlashCmdList["DOROXAURAS"] = function(msg)
             -- Also log to debug if enabled
             if DoroxAurasDebug and DoroxAurasDebug:IsEnabled() then
                 DoroxAurasDebug:LogAllAuras(unit)
+            end
+        end
+
+    elseif cmd == "debugtarget" then
+        -- Debug target debuffs tracking specifically
+        print("|cff00FF00[DoroxAuras]|r Target Debuffs Debug:")
+
+        -- Check if target exists
+        if not UnitExists("target") then
+            print("  |cffFF0000No target selected!|r Target debuffs require a target.")
+            print("  Select a target and try again.")
+        else
+            print("  Target: " .. (UnitName("target") or "Unknown"))
+
+            -- Check configured target debuffs
+            local config = DoroxAurasConfig:GetConfig()
+            print("  |cffFFFF00Configured target_debuffs:|r")
+
+            for _, aura in ipairs(config.auras) do
+                if aura.unit == "target" and aura.type == "debuff" then
+                    local status = "|cff00FF00OK|r"
+                    local notes = {}
+
+                    -- Check if spell is known (for requires_spell)
+                    if aura.requires_spell then
+                        local known = false
+                        local i = 1
+                        while true do
+                            local sName = GetSpellName(i, BOOKTYPE_SPELL)
+                            if not sName then break end
+                            if sName == aura.requires_spell then
+                                known = true
+                                break
+                            end
+                            i = i + 1
+                        end
+                        if known then
+                            table.insert(notes, "spell known")
+                        else
+                            status = "|cffFF0000HIDDEN|r"
+                            table.insert(notes, "spell NOT known: " .. aura.requires_spell)
+                        end
+                    end
+
+                    -- Check icon_spell texture
+                    local iconOk = false
+                    if aura.icon_spell then
+                        local _, _, icon = GetSpellInfo(aura.icon_spell)
+                        if icon then
+                            iconOk = true
+                            table.insert(notes, "icon OK")
+                        else
+                            table.insert(notes, "|cffFF8000icon_spell no texture|r")
+                        end
+                    else
+                        local _, _, icon = GetSpellInfo(aura.spell)
+                        if icon then
+                            iconOk = true
+                            table.insert(notes, "icon OK (spell)")
+                        else
+                            table.insert(notes, "|cffFF8000no icon texture|r")
+                        end
+                    end
+
+                    -- Check if debuff is currently active on target
+                    local active = false
+                    for i = 1, 40 do
+                        local name, _, _, _, _, _, _, caster = UnitDebuff("target", i)
+                        if not name then break end
+                        if name == aura.spell then
+                            if aura.own then
+                                if caster == "player" then
+                                    active = true
+                                    table.insert(notes, "|cff00FF00ACTIVE|r")
+                                end
+                            else
+                                active = true
+                                table.insert(notes, "|cff00FF00ACTIVE|r")
+                            end
+                        end
+                    end
+
+                    if not active and aura.show_missing then
+                        table.insert(notes, "showing as MISSING")
+                    elseif not active then
+                        table.insert(notes, "hidden (inactive)")
+                    end
+
+                    print("    " .. aura.name .. ": " .. status .. " (" .. table.concat(notes, ", ") .. ")")
+                end
             end
         end
 

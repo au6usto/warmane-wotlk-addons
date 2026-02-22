@@ -162,6 +162,7 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Corruption",
+            icon_spell = "Corruption",  -- All warlocks know this
             refresh_warn = 3,
             show_missing = true,
             priority = 1,
@@ -173,9 +174,10 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Unstable Affliction",
+            icon_spell = "Unstable Affliction",  -- Affliction warlocks know this
             refresh_warn = 2,
             show_missing = true,
-            -- Removed requires_spell - if debuff is active, you obviously know it
+            requires_spell = "Unstable Affliction",  -- Only show if player knows UA
             priority = 2,
         },
         {
@@ -185,9 +187,10 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Haunt",
+            icon_spell = "Haunt",  -- Affliction warlocks know this
             refresh_warn = 1,
             show_missing = true,
-            -- Removed requires_spell - if debuff is active, you obviously know it
+            requires_spell = "Haunt",  -- Only show if player knows Haunt
             priority = 3,
         },
         {
@@ -197,9 +200,9 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Immolate",
+            icon_spell = "Immolate",  -- All warlocks know this
             refresh_warn = 3,
             show_missing = true,
-            -- No requires_spell - all warlocks have Immolate
             priority = 4,
         },
         {
@@ -222,8 +225,8 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Curse of Doom",
+            icon_spell = "Curse of Doom",  -- All warlocks know this
             show_missing = true,
-            -- All warlocks have CoD, no restriction needed
             priority = 6,
         },
         {
@@ -233,9 +236,9 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Curse of Agony",
+            icon_spell = "Curse of Agony",  -- All warlocks know this
             refresh_warn = 2,
             show_missing = true,
-            -- All warlocks have CoA, no restriction needed
             priority = 7,
         },
         {
@@ -245,6 +248,7 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Curse of Tongues",
+            icon_spell = "Curse of Tongues",  -- All warlocks know this
             priority = 8,
         },
         {
@@ -254,6 +258,7 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Shadowflame",
+            icon_spell = "Shadowflame",  -- All warlocks know this
             priority = 9,
         },
         {
@@ -263,6 +268,7 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Fear",
+            icon_spell = "Fear",  -- All warlocks know this
             priority = 10,
         },
         {
@@ -272,6 +278,7 @@ local defaults = {
             type = "debuff",
             own = true,
             spell = "Banish",
+            icon_spell = "Banish",  -- All warlocks know this
             priority = 11,
         },
 
