@@ -451,13 +451,14 @@ local defaults = {
 
         -- ==================== PROCS ====================
         -- Decimation and Molten Core show icons when active + big center alert
+        -- Using exact WotLK texture paths (case-sensitive on Linux)
         {
             name = "Decimation",
             group = "procs",
             unit = "player",
             type = "buff",
             spell = "Decimation",
-            item_id = 45780,  -- Glyph of Soul Fire (has Soul Fire icon)
+            texture = "Interface\\Icons\\Spell_Fire_SoulBurn",  -- Soul Fire icon
             glow = true,
             sound = "raid_warning",
             big_alert = true,
@@ -473,7 +474,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Molten Core",
-            item_id = 42459,  -- Glyph of Incinerate (fire icon)
+            texture = "Interface\\Icons\\Spell_Fire_Incinerate",  -- Incinerate icon
             glow = true,
             sound = "raid_warning",
             show_stacks = true,
@@ -490,7 +491,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Shadow Trance",
-            item_id = 42462,  -- Glyph of Shadow Bolt
+            texture = "Interface\\Icons\\Spell_Shadow_ShadowBolt",  -- Shadow Bolt icon
             glow = true,
             sound = "raid_warning",
             big_alert = true,
@@ -505,7 +506,7 @@ local defaults = {
             unit = "player",
             type = "buff",
             spell = "Shadow Mastery",
-            item_id = 42457,  -- Glyph of Corruption (shadow icon)
+            texture = "Interface\\Icons\\Spell_Shadow_ShadowPact",  -- Shadow damage icon
             priority = 4,
         },
         -- ==================== AFFLICTION SNAPSHOT PROCS ====================

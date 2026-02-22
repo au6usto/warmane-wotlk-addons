@@ -189,16 +189,16 @@ end
 
 -- Get texture for an aura config
 local function GetAuraTexture(auraConfig)
-    -- First try item_id (most reliable in 3.3.5 - GetItemInfo works for any item)
+    -- First try hardcoded texture path (most reliable - exists in game files)
+    if auraConfig.texture then
+        return auraConfig.texture
+    end
+    -- Then try item_id (GetItemInfo works for cached items)
     if auraConfig.item_id then
         local _, _, _, _, _, _, _, _, _, texture = GetItemInfo(auraConfig.item_id)
         if texture then
             return texture
         end
-    end
-    -- Then try hardcoded texture path
-    if auraConfig.texture then
-        return auraConfig.texture
     end
     -- Fall back to spell name (only works if player knows spell)
     return GetSpellTexture(auraConfig.spell or auraConfig.spells[1])
@@ -493,16 +493,16 @@ local function CheckAura(auraConfig, unit)
                 if auraConfig.own then
                     if caster == "player" or caster == "pet" or caster == "vehicle" then
                         local remaining = expirationTime and (expirationTime - GetTime()) or nil
-                        -- Use hardcoded texture if icon is nil and config has texture
-                        local finalIcon = icon or auraConfig.texture or GetSpellTexture(spellName)
+                        -- Use icon from UnitBuff, fallback to GetAuraTexture (item_id, texture, or spell)
+                        local finalIcon = icon or GetAuraTexture(auraConfig)
                         return true, finalIcon, remaining, duration, count
                     end
                     -- Not ours, continue searching for our version
                 else
                     -- Any caster is fine
                     local remaining = expirationTime and (expirationTime - GetTime()) or nil
-                    -- Use hardcoded texture if icon is nil and config has texture
-                    local finalIcon = icon or auraConfig.texture or GetSpellTexture(spellName)
+                    -- Use icon from UnitBuff, fallback to GetAuraTexture (item_id, texture, or spell)
+                    local finalIcon = icon or GetAuraTexture(auraConfig)
                     return true, finalIcon, remaining, duration, count
                 end
             end
