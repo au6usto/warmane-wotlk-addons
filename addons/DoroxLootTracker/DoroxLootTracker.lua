@@ -21,22 +21,20 @@ local trackedItems = {
     -- Priority 3: Neck (Current: 245)
     { name = "Amulet of the Silent Eulogy", slot = "Neck", ilvl = 264, source = "Gunship ICC25N", priority = 3 },
     { name = "Blood Queen's Crimson Choker", slot = "Neck", ilvl = 264, source = "Lana'thel ICC25N", priority = 3 },
+    { name = "Bone Sentinel's Amulet", slot = "Neck", ilvl = 251, source = "Trash ICC25N", priority = 3 },
 
     -- Priority 4: Main Hand (Current: 251)
     { name = "Bloodsurge, Kel'Thuzad's Blade of Agony", slot = "Main Hand", ilvl = 264, source = "Lich King ICC25N", priority = 4 },
     { name = "Rigormortis", slot = "Main Hand", ilvl = 264, source = "Rotface ICC25N", priority = 4 },
     { name = "Frozen Bonespike", slot = "Main Hand", ilvl = 264, source = "Marrowgar ICC25N", priority = 4 },
 
-    -- Priority 5: Trinket (Current: 271 - Charred Twilight Scale obtained!)
-    { name = "Phylactery of the Nameless Lich", slot = "Trinket", ilvl = 264, source = "Sindragosa ICC25N", priority = 5 },
+    -- Priority 5: Ring (Current: 251)
+    { name = "Ring of Rapid Ascent", slot = "Ring", ilvl = 264, source = "Gunship ICC25N", priority = 5 },
+    { name = "Memory of Malygos", slot = "Ring", ilvl = 264, source = "Sindragosa ICC25N", priority = 5 },
+    { name = "Signet of Twilight", slot = "Ring", ilvl = 271, source = "Halion RS25N", priority = 5 },
 
-    -- Priority 6: Ring (Current: 251)
-    { name = "Ring of Rapid Ascent", slot = "Ring", ilvl = 264, source = "Gunship ICC25N", priority = 6 },
-    { name = "Memory of Malygos", slot = "Ring", ilvl = 264, source = "Sindragosa ICC25N", priority = 6 },
-    { name = "Signet of Twilight", slot = "Ring", ilvl = 271, source = "Halion RS25N", priority = 6 },
-
-    -- Priority 7: Tier Token
-    { name = "Conqueror's Mark of Sanctification", slot = "Token", ilvl = 264, source = "ICC25N Bosses", priority = 7 },
+    -- Priority 6: Tier Token
+    { name = "Conqueror's Mark of Sanctification", slot = "Token", ilvl = 264, source = "ICC25N Bosses", priority = 6 },
 }
 
 -- Default settings
@@ -57,8 +55,7 @@ local COLORS = {
     priority3 = "FFFF00",  -- Yellow
     priority4 = "00FF00",  -- Green
     priority5 = "00FFFF",  -- Cyan
-    priority6 = "0088FF",  -- Blue
-    priority7 = "AA00FF",  -- Purple
+    priority6 = "AA00FF",  -- Purple
     obtained = "666666",   -- Gray
     source = "AAAAAA",     -- Light gray
     alert = "FF0000",      -- Red
